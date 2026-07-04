@@ -13,6 +13,25 @@ Zum Sichern oder Übertragen gibt es Export/Import als JSON-Datei.
 Die Oberfläche gibt es auf **Deutsch und Englisch** – umschaltbar oben rechts
 (**DE / EN**); die Auswahl wird gemerkt.
 
+## So sieht es aus
+
+**Übersicht (Dashboard)** – Einkommen, Fixkosten, echte Sparquote und frei Verfügbares;
+Donut-Diagramm, Kategorie-Aufteilung mit Prozentanteil vom Einkommen, anstehende Zahlungen
+und eine Auswertung pro Person:
+
+![Übersicht / Dashboard von Sparblick](docs/img/uebersicht.png)
+
+**Zahlungen & Verträge** – alle Abos und Fixkosten auf einen Monatswert umgerechnet,
+per Suche, Kategorie und Sortierung filterbar:
+
+![Zahlungen und Verträge](docs/img/zahlungen.png)
+
+**Bank-Import (DKB & FYRST)** – aus einer Umsatzliste (CSV) werden wiederkehrende Zahlungen
+erkannt und Lebensmittel zusammengefasst; du bestätigst per Häkchen, bereits vorhandene
+Zahlungen werden markiert (Beispieldaten):
+
+![Bank-Import – Vorschau](docs/img/import.png)
+
 ## Funktionen
 
 - **Übersicht (Dashboard):** Einkommen, Fixkosten, **Sparen** (echte Sparquote) und
