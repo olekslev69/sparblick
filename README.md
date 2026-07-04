@@ -1,5 +1,7 @@
 # TrackYourBudget
 
+[![CI](https://github.com/olekslev69/trackyourbudget/actions/workflows/ci.yml/badge.svg)](https://github.com/olekslev69/trackyourbudget/actions/workflows/ci.yml)
+
 Ein kleiner, lokaler **Vertrags- und Budget-Tracker** als Desktop-App.
 Trage dein Einkommen und deine monatlichen Zahlungen (Miete, Abos, Versicherungen,
 Sport …) ein und behalte auf einen Blick, **wie viel Prozent deines Einkommens
@@ -106,6 +108,16 @@ gen_icon.py             erzeugt das Quell-Icon
   (Tauri `dialog`/`fs`-Plugin); im Browser der übliche Download bzw. die Dateiauswahl.
   JSON ist das vollständige Backup; CSV (Semikolon-getrennt, UTF-8 mit BOM für Excel)
   dient dem Bearbeiten der Zahlungen in einer Tabellenkalkulation.
+
+## Mitwirken
+
+Beiträge sind willkommen – Setup, Branch- und Commit-Konventionen sowie der
+Ablauf für Pull Requests stehen in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+- **CI:** Bei jedem Push/PR prüft `.github/workflows/ci.yml` die JavaScript-Syntax,
+  die JSON-Konfigurationen und die Rust-Formatierung.
+- **Release:** `.github/workflows/release.yml` baut die Desktop-App für macOS,
+  Windows und Linux – ausgelöst durch einen Tag `v*` oder manuell.
 
 ## Datenschutz
 
