@@ -146,11 +146,15 @@ npm run icons      # entspricht: tauri icon app-icon.png
 src/                    Frontend (statisches HTML/CSS/JS, ohne Build-Schritt)
   index.html
   styles.css
-  app.js                gesamte App-Logik + lokale Speicherung
+  app.js                gesamte App-Logik + Übersetzungen + lokale Speicherung
+  manifest.webmanifest  PWA-Manifest
+  sw.js                 Service Worker (Offline-Cache)
+  icons/                PWA-Icons (192/512/maskable)
 scripts/serve.js        winziger Static-Server für den Browsertest
 src-tauri/              Tauri-/Rust-Teil (Desktop-Fenster, Datei-Dialoge)
+.github/workflows/      CI, Release (Desktop-Builds) und Pages (PWA-Deploy)
 app-icon.png            Quell-Icon
-gen_icon.py             erzeugt das Quell-Icon
+gen_icon.py             erzeugt Quell- und Web-Icons
 ```
 
 ## Technik & Datenhaltung

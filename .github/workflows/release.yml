@@ -55,13 +55,18 @@ jobs:
       - name: npm-Abhängigkeiten installieren
         run: npm ci
 
+      - name: App-Version lesen
+        id: ver
+        shell: bash
+        run: echo "version=$(node -p "require('./src-tauri/tauri.conf.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Desktop-App bauen und Release-Entwurf erstellen
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('build-{0}', github.run_number) }}
-          releaseName: 'Sparblick ${{ github.ref_type == ''tag'' && github.ref_name || github.run_number }}'
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}-build-{1}', steps.ver.outputs.version, github.run_number) }}
+          releaseName: Sparblick v${{ steps.ver.outputs.version }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

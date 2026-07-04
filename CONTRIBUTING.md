@@ -49,7 +49,7 @@ Entwickle nie direkt auf `main`. Erstelle einen beschreibenden Branch:
 ## Commit-Nachrichten
 
 - Kurze, aussagekräftige Betreffzeile (≤ 72 Zeichen), im Imperativ
-  (z. B. „Add CSV export for payments").
+  (z. B. „Add German/English language switch").
 - Bei Bedarf ein Fließtext, der das *Warum* erklärt.
 - Ein Commit = eine logische Änderung.
 
