@@ -10,12 +10,16 @@ Zum Sichern oder Übertragen gibt es Export/Import als JSON-Datei.
 
 ## Funktionen
 
-- **Übersicht (Dashboard):** monatliches Einkommen, Fixkosten, Verbleibendes und
-  Sparquote; Donut-Diagramm und Kategorie-Aufteilung mit Prozentanteil vom Einkommen.
+- **Übersicht (Dashboard):** Einkommen, Fixkosten, Verbleibendes und Sparquote;
+  Donut-Diagramm und Kategorie-Aufteilung mit Prozentanteil vom Einkommen.
+  Per **Umschalter Monat / Jahr** lassen sich alle Beträge auf Monats- oder
+  Jahresbasis anzeigen (Jahresübersicht = was alle Verträge pro Jahr kosten).
 - **Einnahmen:** mehrere Einkommensquellen, auch pro Person.
 - **Zahlungen & Verträge:** Betrag, Intervall (wöchentlich, monatlich, quartals­weise,
   halbjährlich, jährlich), Kategorie, Notiz. Alle Beträge werden automatisch auf einen
-  **Monatswert** umgerechnet. Zahlungen lassen sich pausieren.
+  **Monatswert** umgerechnet. Zahlungen lassen sich pausieren. Die Liste ist per
+  **Suche, Kategorie und Sortierung filterbar**; eine Summenzeile zeigt Monats- und
+  Jahreskosten der Auswahl.
 - **Kategorien:** frei anpassbar mit eigener Farbe.
 - **Personen / spätere getrennte Budgets:** Im Tab **Personen** lassen sich Personen
   anlegen, umbenennen und löschen (z. B. „Partnerin" durch den echten Namen ersetzen).

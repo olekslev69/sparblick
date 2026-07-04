@@ -50,6 +50,8 @@
   let state = loadData();
   let currentView = "uebersicht";
   let personFilter = "all"; // "all" oder eine person-id
+  let period = "monat"; // "monat" oder "jahr" (Anzeige auf der Übersicht)
+  let zahlungFilter = { kategorie: "all", suche: "", sort: "betrag_desc" };
 
   function loadData() {
     try {
@@ -210,12 +212,23 @@
   function renderUebersicht(root) {
     const c = calc();
     const savingRate = c.income > 0 ? c.rest / c.income : 0;
+    const f = period === "jahr" ? 12 : 1;               // Faktor Monat -> Jahr
+    const per = period === "jahr" ? "Jahr" : "Monat";
+
+    // Umschalter Monat / Jahr
+    root.appendChild(el("div", { class: "section-head", style: "margin-bottom:14px" },
+      el("div", {}, el("h2", { style: "font-size:1.15rem" }, "Übersicht"),
+        el("p", {}, "Alle Beträge " + (period === "jahr" ? "pro Jahr" : "pro Monat"))),
+      el("div", { class: "seg" },
+        el("button", { class: period === "monat" ? "active" : "", onclick: () => { period = "monat"; render(); } }, "Monat"),
+        el("button", { class: period === "jahr" ? "active" : "", onclick: () => { period = "jahr"; render(); } }, "Jahr"))
+    ));
 
     root.appendChild(
       el("div", { class: "kpi-grid" },
-        kpiCard("Einkommen / Monat", fmt(c.income), "accent"),
-        kpiCard("Fixkosten / Monat", fmt(c.costs)),
-        kpiCard("Verbleibend", fmt(c.rest), c.rest >= 0 ? "pos" : "neg",
+        kpiCard("Einkommen / " + per, fmt(c.income * f), "accent"),
+        kpiCard("Fixkosten / " + per, fmt(c.costs * f)),
+        kpiCard("Verbleibend", fmt(c.rest * f), c.rest >= 0 ? "pos" : "neg",
           c.income > 0 ? "Sparquote " + fmtPct(savingRate) : ""),
         kpiCard("Zahlungen aktiv", String(state.zahlungen.filter((z) => z.aktiv !== false).filter(matchesPerson).length))
       )
@@ -228,12 +241,12 @@
       root.appendChild(
         el("div", { class: "dash-grid" },
           el("div", { class: "card donut-wrap" },
-            donut(c.catRows, c.costs),
+            donut(c.catRows, c.costs, f, per),
             el("div", { class: "hint" }, "Aufteilung der Fixkosten")
           ),
           el("div", { class: "card" },
             el("div", { class: "section-head" }, el("h2", { style: "font-size:1.05rem" }, "Nach Kategorie")),
-            el("div", { class: "cat-list" }, ...c.catRows.map((r) => catRow(r, c.income)))
+            el("div", { class: "cat-list" }, ...c.catRows.map((r) => catRow(r, c.income, f)))
           )
         )
       );
@@ -247,9 +260,9 @@
         if (inc === 0 && cost === 0) return null;
         return el("div", { class: "card person-card" },
           el("h4", {}, p.name),
-          el("div", { class: "line" }, el("span", {}, "Einkommen"), el("b", {}, fmt(inc))),
-          el("div", { class: "line" }, el("span", {}, "Kosten"), el("b", {}, fmt(cost))),
-          el("div", { class: "line" }, el("span", {}, "Rest"), el("b", {}, fmt(inc - cost)))
+          el("div", { class: "line" }, el("span", {}, "Einkommen"), el("b", {}, fmt(inc * f))),
+          el("div", { class: "line" }, el("span", {}, "Kosten"), el("b", {}, fmt(cost * f))),
+          el("div", { class: "line" }, el("span", {}, "Rest"), el("b", {}, fmt((inc - cost) * f)))
         );
       }).filter(Boolean);
       if (cards.length) {
@@ -269,18 +282,20 @@
     );
   }
 
-  function catRow(r, income) {
+  function catRow(r, income, f) {
+    f = f || 1;
     const widthPct = Math.max(2, Math.round(r.pctCosts * 100));
     return el("div", { class: "cat-row" },
       el("div", { class: "name" }, el("span", { class: "dot", style: "background:" + r.farbe }), r.name),
-      el("div", { class: "amount" }, fmt(r.amount)),
+      el("div", { class: "amount" }, fmt(r.amount * f)),
       el("div", { class: "bar" }, el("span", { style: `width:${widthPct}%;background:${r.farbe}` })),
       el("div", { class: "pct" }, income > 0 ? fmtPct(r.pctIncome) + " vom Einkommen" : fmtPct(r.pctCosts) + " der Kosten")
     );
   }
 
   /* SVG-Donut-Diagramm */
-  function donut(rows, total) {
+  function donut(rows, total, f, per) {
+    f = f || 1;
     const NS = "http://www.w3.org/2000/svg";
     const size = 210, cx = size / 2, cy = size / 2, r = 82, stroke = 30;
     const circ = 2 * Math.PI * r;
@@ -310,8 +325,8 @@
 
     return el("div", { class: "donut" }, svg,
       el("div", { class: "donut-center" },
-        el("div", { class: "big" }, fmt(total)),
-        el("div", { class: "small" }, "pro Monat")));
+        el("div", { class: "big" }, fmt(total * f)),
+        el("div", { class: "small" }, "pro " + (per || "Monat"))));
   }
 
   /* ---------- View: Einnahmen ---------- */
@@ -365,19 +380,79 @@
   }
 
   /* ---------- View: Zahlungen ---------- */
+  function filteredZahlungen() {
+    let list = state.zahlungen.filter(matchesPerson);
+    if (zahlungFilter.kategorie !== "all") {
+      list = list.filter((z) => (z.kategorieId || "k_sonstiges") === zahlungFilter.kategorie);
+    }
+    const q = zahlungFilter.suche.trim().toLowerCase();
+    if (q) {
+      list = list.filter((z) =>
+        (z.bezeichnung || "").toLowerCase().includes(q) || (z.notiz || "").toLowerCase().includes(q));
+    }
+    const sorters = {
+      betrag_desc: (a, b) => monthly(b) - monthly(a),
+      betrag_asc: (a, b) => monthly(a) - monthly(b),
+      name: (a, b) => (a.bezeichnung || "").localeCompare(b.bezeichnung || "", "de"),
+    };
+    return list.slice().sort(sorters[zahlungFilter.sort] || sorters.betrag_desc);
+  }
+
   function renderZahlungen(root) {
+    if (zahlungFilter.kategorie !== "all" && !kategorieById(zahlungFilter.kategorie)) {
+      zahlungFilter.kategorie = "all";
+    }
     root.appendChild(sectionHead("Zahlungen & Verträge", "Abos, Verträge und feste monatliche Ausgaben.",
       el("button", { class: "btn primary", onclick: () => openZahlungModal() }, "+ Zahlung")));
 
-    const list = state.zahlungen.filter(matchesPerson)
-      .slice().sort((a, b) => monthly(b) - monthly(a));
-    if (!list.length) {
+    if (!state.zahlungen.filter(matchesPerson).length) {
       root.appendChild(emptyState("Noch keine Zahlungen.", "Lege deinen ersten Vertrag oder ein Abo an."));
       return;
     }
-    root.appendChild(el("div", { class: "list" }, ...list.map((z) => {
+
+    // Filterleiste
+    const katSelect = el("select", { onchange: (e) => { zahlungFilter.kategorie = e.target.value; paintZahlungList(); } },
+      el("option", { value: "all" }, "Alle Kategorien"),
+      ...state.kategorien.map((k) => {
+        const o = el("option", { value: k.id }, k.name);
+        if (k.id === zahlungFilter.kategorie) o.selected = true;
+        return o;
+      }));
+    const sortSelect = el("select", { onchange: (e) => { zahlungFilter.sort = e.target.value; paintZahlungList(); } },
+      ...[["betrag_desc", "Betrag absteigend"], ["betrag_asc", "Betrag aufsteigend"], ["name", "Name (A–Z)"]].map(([v, l]) => {
+        const o = el("option", { value: v }, l);
+        if (v === zahlungFilter.sort) o.selected = true;
+        return o;
+      }));
+    const search = el("input", { type: "text", class: "search", placeholder: "Suchen …", value: zahlungFilter.suche,
+      oninput: (e) => { zahlungFilter.suche = e.target.value; paintZahlungList(); } });
+
+    root.appendChild(el("div", { class: "filter-bar" }, search, katSelect, sortSelect,
+      el("button", { class: "btn ghost small", onclick: () => { zahlungFilter = { kategorie: "all", suche: "", sort: "betrag_desc" }; render(); } }, "Zurücksetzen")));
+
+    root.appendChild(el("p", { class: "filter-summary", id: "zahlungSummary" }));
+    root.appendChild(el("div", { class: "list", id: "zahlungList" }));
+    paintZahlungList();
+  }
+
+  function paintZahlungList() {
+    const container = $("#zahlungList");
+    if (!container) return;
+    const list = filteredZahlungen();
+    const sum = list.filter((z) => z.aktiv !== false).reduce((s, z) => s + monthly(z), 0);
+    const summary = $("#zahlungSummary");
+    if (summary) {
+      summary.textContent = `${list.length} Zahlung(en)` +
+        (list.length ? ` · ${fmt(sum)}/Monat · ${fmt(sum * 12)}/Jahr (aktive)` : "");
+    }
+    container.innerHTML = "";
+    if (!list.length) {
+      container.appendChild(el("div", { class: "empty" }, "Keine Zahlungen für diesen Filter."));
+      return;
+    }
+    for (const z of list) {
       const k = kategorieById(z.kategorieId);
-      return el("div", { class: "item" + (z.aktiv === false ? " inactive" : "") },
+      container.appendChild(el("div", { class: "item" + (z.aktiv === false ? " inactive" : "") },
         el("span", { class: "swatch", style: "background:" + (k ? k.farbe : "#64748b") }),
         el("div", { class: "main" },
           el("div", { class: "title" }, z.bezeichnung || "Zahlung",
@@ -391,8 +466,8 @@
           el("button", { class: "btn ghost icon", title: z.aktiv === false ? "Aktivieren" : "Pausieren", onclick: () => toggleZahlung(z.id) }, icon(z.aktiv === false ? "play" : "pause")),
           el("button", { class: "btn ghost icon", title: "Bearbeiten", onclick: () => openZahlungModal(z) }, icon("edit")),
           el("button", { class: "btn danger icon", title: "Löschen", onclick: () => removeZahlung(z.id) }, icon("trash")))
-      );
-    })));
+      ));
+    }
   }
 
   function openZahlungModal(entry) {
