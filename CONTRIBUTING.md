@@ -62,6 +62,24 @@ Entwickle nie direkt auf `main`. Erstelle einen beschreibenden Branch:
 - Keine Inline-`onclick`-Attribute im HTML (Content-Security-Policy); Ereignisse
   über `addEventListener` bzw. die `el()`-Hilfsfunktion registrieren.
 
+## Weitere Bank für den Import ergänzen
+
+Der Bank-Import in `src/app.js` ist bewusst zweigeteilt, damit neue Banken ohne
+Änderung an der Erkennungslogik hinzukommen:
+
+- **Bank-Parser** (`BANK_PARSERS`): wandeln den CSV-Text in eine **normalisierte
+  Buchungsliste** um. Jeder Parser hat `detect(lines, text)` (erkennt sein Format) und
+  `parse(lines, text)`, das `{ rows, period }` liefert. Jede `row` hat die Felder
+  `payee` (Empfänger), `purpose` (Verwendungszweck), `payer` (Kontoinhaber\*in, für die
+  Erkennung eigener/gemeinsamer Konten), `amount` (positiv) und `expense` (Ausgabe?).
+- **Klassifizierung** (`CATEGORY_RULES` + `classifyRows`): bank-unabhängig. Ordnet die
+  Buchungen anhand von Empfänger/Verwendungszweck einer Kategorie zu, fasst Lebensmittel
+  zusammen und ignoriert Umbuchungen aufs eigene/Gemeinschaftskonto.
+
+Eine neue Bank ergänzt man also, indem man einen weiteren Parser schreibt und in
+`BANK_PARSERS` einträgt – `CATEGORY_RULES`, die Vorschau und die Duplikat-Erkennung
+bleiben unverändert.
+
 ## Vor dem Pull Request
 
 Bitte lokal prüfen:

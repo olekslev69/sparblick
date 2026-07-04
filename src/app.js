@@ -102,6 +102,20 @@
       file_label: "Datei", import_title: "Daten importieren",
       import_question: "Wie sollen die importierten Daten übernommen werden?",
       merge: "Zusammenführen", replace: "Ersetzen", merged: "Daten zusammengeführt", replaced: "Daten ersetzt",
+      // DKB-Import
+      dkb_card_title: "Import aus Bank (DKB)",
+      dkb_card_text: "Lies eine DKB-Umsatzliste (CSV) ein. Die App erkennt wiederkehrende Zahlungen und Lebensmittel automatisch – du bestätigst per Häkchen, bevor etwas hinzugefügt wird. Umbuchungen und Investitionen werden ignoriert.",
+      dkb_import_btn: " DKB-CSV importieren",
+      dkb_not_recognized: "Kein DKB-Umsatzformat erkannt",
+      dkb_nothing: "Keine wiederkehrenden Zahlungen oder Lebensmittel gefunden",
+      dkb_preview_title: "DKB-Import – Vorschau",
+      dkb_preview_intro: "{n} Vorschläge erkannt · {ign} Umsätze ignoriert (Umbuchungen, Investitionen, Sonstiges).",
+      dkb_for_all: "Für alle:",
+      dkb_groceries: "Lebensmittel",
+      dkb_add_btn: "{n} übernehmen",
+      dkb_imported: "{n} Zahlung(en) importiert",
+      dkb_none_selected: "Nichts ausgewählt",
+      dkb_exists: "bereits vorhanden",
       // Standarddaten
       seed_p_ich: "Ich", seed_p_partner: "Partnerin", seed_p_gemeinsam: "Gemeinsam",
       seed_k_wohnen: "Wohnen & Miete", seed_k_versicherung: "Versicherungen", seed_k_sport: "Sport & Fitness",
@@ -188,6 +202,19 @@
       file_label: "File", import_title: "Import data",
       import_question: "How should the imported data be applied?",
       merge: "Merge", replace: "Replace", merged: "Data merged", replaced: "Data replaced",
+      dkb_card_title: "Import from bank (DKB)",
+      dkb_card_text: "Read a DKB transaction list (CSV). The app detects recurring payments and groceries automatically – you confirm with checkboxes before anything is added. Transfers and investments are ignored.",
+      dkb_import_btn: " Import DKB CSV",
+      dkb_not_recognized: "No DKB transaction format recognized",
+      dkb_nothing: "No recurring payments or groceries found",
+      dkb_preview_title: "DKB import – preview",
+      dkb_preview_intro: "{n} suggestions detected · {ign} transactions ignored (transfers, investments, other).",
+      dkb_for_all: "For all:",
+      dkb_groceries: "Groceries",
+      dkb_add_btn: "Add {n}",
+      dkb_imported: "{n} payment(s) imported",
+      dkb_none_selected: "Nothing selected",
+      dkb_exists: "already added",
       seed_p_ich: "Me", seed_p_partner: "Partner", seed_p_gemeinsam: "Shared",
       seed_k_wohnen: "Housing & rent", seed_k_versicherung: "Insurance", seed_k_sport: "Sports & fitness",
       seed_k_abos: "Subscriptions & streaming", seed_k_mobilitaet: "Mobility & car", seed_k_telekom: "Phone & internet",
@@ -1004,6 +1031,13 @@
         el("button", { class: "btn", onclick: startImport }, icon("upload"), t("import_json")))
     ));
 
+    root.appendChild(el("div", { class: "card", style: "margin-top:18px" },
+      el("h3", { style: "margin:0 0 6px" }, t("dkb_card_title")),
+      el("p", { class: "hint", style: "margin:0" }, t("dkb_card_text")),
+      el("div", { class: "data-actions" },
+        el("button", { class: "btn", onclick: startBankImport }, icon("upload"), t("dkb_import_btn")))
+    ));
+
     const c = calc();
     root.appendChild(el("div", { class: "card", style: "margin-top:18px" },
       el("h3", { style: "margin:0 0 10px" }, t("current_status")),
@@ -1149,6 +1183,243 @@
     addEntries(result.sparplaene, incoming.sparplaene);
 
     return result;
+  }
+
+  /* ----- Import aus Bank-Umsatzliste (CSV) ----- */
+  // Kategorie-Regeln (bank-unabhängig): erkennen wiederkehrende Zahlungen und
+  // Lebensmittel anhand von Empfänger/Verwendungszweck. Erst-Treffer gewinnt.
+  const CATEGORY_RULES = [
+    { re: /supermarkt|\brewe\b|\baldi\b|\blidl\b|edeka|kaufland|\bpenny\b|\bnetto\b|rossmann|\bdm\b|b(ä|ae)cker|metro|alnatura|denns|tegut/i, grocery: true },
+    { re: /\bmiete\b/i, catDefId: "k_wohnen", catDe: "Wohnen & Miete", catEn: "Housing & rent", name: "Miete" },
+    { re: /octopus|energy|energie|\bstrom\b|stadtwerke|e\.?on\b|vattenfall|enbw|mainova/i, catDefId: null, catDe: "Strom & Energie", catEn: "Electricity & energy" },
+    { re: /versicher|signal iduna|baloise|allianz|\bhuk\b|\baxa\b|\bergo\b|debeka|generali|provinzial|rentenversicherung/i, catDefId: "k_versicherung", catDe: "Versicherungen", catEn: "Insurance" },
+    { re: /vodafone|telekom|\bo2\b|1&1|1und1|congstar|mobilcom|telefonica|pyur/i, catDefId: "k_telekom", catDe: "Telefon & Internet", catEn: "Phone & internet" },
+    { re: /netflix|spotify|disney|\bdazn\b|amazon prime|prime video|youtube premium|audible|\bsky\b/i, catDefId: "k_abos", catDe: "Abos & Streaming", catEn: "Subscriptions & streaming" },
+    { re: /fitness|mcfit|clever ?fit|urban sports|\bgym\b|fit\/one/i, catDefId: "k_sport", catDe: "Sport & Fitness", catEn: "Sports & fitness" },
+  ];
+
+  function splitCsvLine(line, sep) {
+    const out = []; let cur = ""; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (inQ) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; } else cur += c; }
+      else if (c === '"') inQ = true;
+      else if (c === sep) { out.push(cur); cur = ""; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out;
+  }
+  function parseDeNum(s) { return Number(String(s || "").trim().replace(/\./g, "").replace(",", ".")); }
+  function cleanMerchant(s) { return String(s || "").replace(/\s{2,}.*/, "").trim().slice(0, 48); }
+  function normName(s) { return String(s || "").toLowerCase().replace(/\s*\(.*?\)\s*/g, " ").replace(/\s+/g, " ").trim(); }
+
+  // Namens-Tokens (für die Erkennung eigener/gemeinsamer Konten). Anreden/Füllwörter raus.
+  const NAME_STOP = new Set(["herr", "herrn", "frau", "konto", "bank", "gmbh"]);
+  function nameTokens(s) {
+    return String(s || "").toLowerCase().replace(/[^a-zäöüß\s-]/g, " ").split(/[\s-]+/).filter((w) => w.length >= 4 && !NAME_STOP.has(w));
+  }
+  // Kontoinhaber aus der „Zahlungspflichtige*r"-Spalte ableiten: Tokens, die in der
+  // Mehrheit der Ausgangsbuchungen auftauchen (bleibt der/die Kontoinhaber*in konstant).
+  function deriveOwner(rows) {
+    const counts = new Map(); let n = 0;
+    for (const r of rows) {
+      if (!r.payer) continue; n++;
+      new Set(nameTokens(r.payer)).forEach((w) => counts.set(w, (counts.get(w) || 0) + 1));
+    }
+    if (!n) return [];
+    const owner = [];
+    counts.forEach((c, w) => { if (c / n >= 0.6) owner.push(w); });
+    return owner;
+  }
+  // Ist die Gegenseite der/die Kontoinhaber*in selbst (z. B. Umbuchung aufs eigene
+  // oder Gemeinschaftskonto)? -> solche Transfers ignorieren wir.
+  function isSelfTransfer(payee, ownerTokens) {
+    if (!ownerTokens.length) return false;
+    const toks = new Set(nameTokens(payee));
+    let m = 0; ownerTokens.forEach((w) => { if (toks.has(w)) m++; });
+    return m >= Math.min(2, ownerTokens.length);
+  }
+
+  // Gibt es bereits eine Zahlung mit (ähnlichem) Namen? -> Duplikate beim Re-Import vermeiden.
+  function zahlungExists(name) {
+    const n = normName(name);
+    if (!n) return false;
+    return state.zahlungen.some((z) => {
+      const zn = normName(z.bezeichnung);
+      if (!zn) return false;
+      return zn === n || (n.length >= 4 && zn.includes(n)) || (zn.length >= 4 && n.includes(zn));
+    });
+  }
+
+  function importKat(defId, deName, enName) {
+    if (defId) { const k = state.kategorien.find((x) => x.id === defId); if (k) return k.id; }
+    const name = lang === "de" ? deName : enName;
+    const byName = state.kategorien.find((x) => x.name.toLowerCase() === name.toLowerCase());
+    if (byName) return byName.id;
+    const rec = { id: uid("k"), name, farbe: PALETTE[state.kategorien.length % PALETTE.length] };
+    state.kategorien.push(rec);
+    return rec.id;
+  }
+
+  // Monatsname aus Zahlen bilden (sprachabhängig), z. B. (5, 26) -> "Mai 2026".
+  function monthLabel(mon, yr) {
+    let y = yr; if (y < 100) y += 2000;
+    const months = lang === "de"
+      ? ["", "Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+      : ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return (months[mon] || "") + " " + y;
+  }
+
+  // ---- Bank-Parser -------------------------------------------------------
+  // Jeder Parser erkennt sein CSV-Format (detect) und liefert eine
+  // normalisierte Buchungsliste (parse): rows = [{ payee, purpose, amount, expense }].
+  // Eine weitere Bank ergänzt man, indem man hier einen Parser hinzufügt – die
+  // Klassifizierung (classifyRows) und die Vorschau bleiben unverändert.
+  const dkbParser = {
+    id: "dkb",
+    label: "DKB",
+    detect(lines) { return lines.some((l) => /Buchungsdatum/i.test(l) && /Betrag/i.test(l)); },
+    parse(lines) {
+      const headerIdx = lines.findIndex((l) => /Buchungsdatum/i.test(l) && /Betrag/i.test(l));
+      if (headerIdx < 0) return null;
+      const header = splitCsvLine(lines[headerIdx], ";").map((h) => h.trim());
+      const idx = {
+        emp: header.findIndex((h) => /empf(ä|ae)nger/i.test(h)),
+        vz: header.findIndex((h) => /verwendungszweck/i.test(h)),
+        typ: header.findIndex((h) => /umsatztyp/i.test(h)),
+        betrag: header.findIndex((h) => /betrag/i.test(h)),
+        pay: header.findIndex((h) => /zahlungspflicht/i.test(h)),
+      };
+      if (idx.betrag < 0 || idx.emp < 0) return null;
+
+      // Zeitraum/Monat aus dem Dateikopf (optional, für die Lebensmittel-Bezeichnung)
+      let period = "";
+      const zl = lines.slice(0, headerIdx).find((l) => /Zeitraum/i.test(l));
+      if (zl) { const m = /(\d{2})\.(\d{2})\.(\d{2,4})\s*-/.exec(zl); if (m) period = monthLabel(+m[2], +m[3]); }
+
+      const rows = [];
+      for (let i = headerIdx + 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const r = splitCsvLine(lines[i], ";");
+        const typ = idx.typ >= 0 ? (r[idx.typ] || "").trim().toLowerCase() : "";
+        const amount = parseDeNum(r[idx.betrag]);
+        rows.push({
+          payee: (r[idx.emp] || "").trim(),
+          purpose: idx.vz >= 0 ? (r[idx.vz] || "").trim() : "",
+          payer: idx.pay >= 0 ? (r[idx.pay] || "").trim() : "",
+          amount: Math.abs(amount),
+          expense: idx.typ >= 0 ? typ === "ausgang" : amount < 0, // nur Ausgaben zählen später
+        });
+      }
+      // Eigene/gemeinsame Konten erkennen und als Transfer markieren (werden ignoriert).
+      const ownerTokens = deriveOwner(rows);
+      rows.forEach((row) => { row.self = isSelfTransfer(row.payee, ownerTokens); });
+      return { rows, period };
+    },
+  };
+
+  // Registrierte Bank-Parser. Für eine neue Bank hier einen weiteren Parser eintragen.
+  const BANK_PARSERS = [dkbParser];
+
+  // Wendet die (bank-unabhängigen) Kategorie-Regeln auf eine normalisierte
+  // Buchungsliste an und fasst Lebensmittel zu einer Summe zusammen.
+  function classifyRows(rows, period) {
+    let grocery = 0, ignored = 0;
+    const suggestions = [];
+    for (const row of rows) {
+      if (!row.expense) continue; // nur Ausgaben
+      if (!isFinite(row.amount) || row.amount <= 0) continue;
+      if (row.self) { ignored++; continue; } // Umbuchung / Gemeinschaftskonto ignorieren
+      const rule = CATEGORY_RULES.find((x) => x.re.test((row.payee + " " + row.purpose).toLowerCase()));
+      if (!rule) { ignored++; continue; }
+      if (rule.grocery) { grocery += row.amount; continue; }
+      suggestions.push({ name: rule.name || cleanMerchant(row.payee), betrag: row.amount, catDefId: rule.catDefId, catDe: rule.catDe, catEn: rule.catEn });
+    }
+    if (grocery > 0) {
+      grocery = Math.round(grocery * 100) / 100;
+      suggestions.push({ name: t("dkb_groceries") + (period ? " (" + period + ")" : ""), betrag: grocery,
+        catDefId: "k_lebensmittel", catDe: "Lebensmittel (pauschal)", catEn: "Groceries (lump sum)" });
+    }
+    suggestions.forEach((s) => { s.exists = zahlungExists(s.name); });
+    suggestions.sort((a, b) => b.betrag - a.betrag);
+    return { suggestions, ignored, period };
+  }
+
+  // Erkennt das Bankformat und liefert die klassifizierten Vorschläge (oder null).
+  function classifyBankExport(text) {
+    const lines = String(text || "").replace(/^﻿/, "").split(/\r?\n/);
+    const parser = BANK_PARSERS.find((p) => p.detect(lines, text));
+    if (!parser) return null;
+    const parsed = parser.parse(lines, text);
+    if (!parsed || !parsed.rows || !parsed.rows.length) return null;
+    return classifyRows(parsed.rows, parsed.period);
+  }
+
+  function startBankImport() {
+    openTextFile(["csv"], (text) => {
+      let res = null;
+      try { res = classifyBankExport(text); } catch (e) { console.error(e); }
+      if (!res) { toast(t("dkb_not_recognized")); return; }
+      if (!res.suggestions.length) { toast(t("dkb_nothing")); return; }
+      openDkbPreview(res);
+    });
+  }
+
+  function openDkbPreview(res) {
+    closeModal();
+    const personSel = el("select");
+    personOptions().forEach(([v, l]) => { const o = el("option", { value: v }, l); if (v === state.personen[state.personen.length - 1].id) o.selected = true; personSel.appendChild(o); });
+    const intervalSel = el("select");
+    intervalOptions().forEach(([v, l]) => { const o = el("option", { value: v }, l); if (v === "monatlich") o.selected = true; intervalSel.appendChild(o); });
+
+    const addBtn = el("button", { class: "btn primary" }, "");
+    function updBtn() { addBtn.textContent = t("dkb_add_btn", { n: res.suggestions.filter((s) => s._cb.checked).length }); }
+
+    const rows = res.suggestions.map((s) => {
+      const cb = el("input", { type: "checkbox" });
+      cb.checked = !s.exists;
+      cb.addEventListener("change", updBtn);
+      const nameInput = el("input", { type: "text", value: s.name });
+      s._cb = cb; s._name = nameInput;
+      return el("div", { class: "imp-row" },
+        cb,
+        el("div", { class: "imp-main" },
+          nameInput,
+          el("div", { class: "imp-cat" },
+            el("span", { class: "tag" }, lang === "de" ? s.catDe : s.catEn),
+            s.exists ? el("span", { class: "tag muted" }, t("dkb_exists")) : null)),
+        el("div", { class: "imp-amount" }, fmt(s.betrag)));
+    });
+    updBtn();
+
+    addBtn.addEventListener("click", () => {
+      const person = personSel.value, intervall = intervalSel.value;
+      let n = 0;
+      for (const s of res.suggestions) {
+        if (!s._cb.checked) continue;
+        state.zahlungen.push({
+          id: uid("z"), bezeichnung: (s._name.value.trim() || s.name), betrag: s.betrag,
+          intervall, kategorieId: importKat(s.catDefId, s.catDe, s.catEn), person, notiz: "", faellig: "", aktiv: true,
+        });
+        n++;
+      }
+      if (!n) { toast(t("dkb_none_selected")); return; }
+      closeModal(); save(); currentView = "zahlungen"; render(); toast(t("dkb_imported", { n }));
+    });
+
+    const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => { if (e.target === backdrop) closeModal(); } },
+      el("div", { class: "modal wide", role: "dialog" },
+        el("div", { class: "modal-head" }, t("dkb_preview_title")),
+        el("div", { class: "modal-body" },
+          el("p", { class: "filter-summary", style: "margin:0" }, t("dkb_preview_intro", { n: res.suggestions.length, ign: res.ignored })),
+          el("div", { class: "filter-bar", style: "margin:2px 0 2px" }, el("span", { class: "hint" }, t("dkb_for_all")), personSel, intervalSel),
+          el("div", { class: "imp-list" }, ...rows)),
+        el("div", { class: "modal-foot" },
+          el("button", { class: "btn ghost", onclick: closeModal }, t("cancel")),
+          addBtn)));
+    $("#modalRoot").appendChild(backdrop);
+    document.addEventListener("keydown", escClose);
   }
 
   function resetData() {
