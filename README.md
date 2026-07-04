@@ -1,4 +1,4 @@
-# TrackYourBudget
+# Sparblick
 
 [![CI](https://github.com/olekslev69/trackyourbudget/actions/workflows/ci.yml/badge.svg)](https://github.com/olekslev69/trackyourbudget/actions/workflows/ci.yml)
 

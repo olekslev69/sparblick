@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    trackyourbudget_lib::run()
+    sparblick_lib::run()
 }

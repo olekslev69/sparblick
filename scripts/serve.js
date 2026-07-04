@@ -28,4 +28,4 @@ http
     res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream" });
     res.end(fs.readFileSync(file));
   })
-  .listen(PORT, () => console.log(`TrackYourBudget läuft auf http://localhost:${PORT}`));
+  .listen(PORT, () => console.log(`Sparblick läuft auf http://localhost:${PORT}`));

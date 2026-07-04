@@ -1,4 +1,4 @@
-/* TrackYourBudget — lokale Verwaltung von Einnahmen, Verträgen und Zahlungen.
+/* Sparblick — lokale Verwaltung von Einnahmen, Verträgen und Zahlungen.
  * Keine externen Abhängigkeiten. Daten liegen im localStorage des Geräts. */
 (function () {
   "use strict";
@@ -871,7 +871,7 @@
 
   /* ----- JSON: vollständiges Backup ----- */
   async function exportData() {
-    if (await saveTextFile("trackyourbudget-export.json", "application/json", JSON.stringify(state, null, 2))) {
+    if (await saveTextFile("sparblick-export.json", "application/json", JSON.stringify(state, null, 2))) {
       toast("Export erstellt");
     }
   }

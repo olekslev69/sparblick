@@ -1,4 +1,4 @@
-# Mitwirken an TrackYourBudget
+# Mitwirken an Sparblick
 
 Danke, dass du beitragen möchtest! Dieses Dokument beschreibt, wie du das Projekt
 aufsetzt, welche Konventionen gelten und wie du Änderungen einreichst.
