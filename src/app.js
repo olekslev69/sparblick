@@ -201,6 +201,7 @@
       einnahmen: renderEinnahmen,
       zahlungen: renderZahlungen,
       kategorien: renderKategorien,
+      personen: renderPersonen,
       daten: renderDaten,
     }[currentView])(app);
   }
@@ -475,6 +476,58 @@
     const fallback = state.kategorien.find((k) => k.id !== id);
     state.zahlungen.forEach((z) => { if (z.kategorieId === id) z.kategorieId = fallback.id; });
     state.kategorien = state.kategorien.filter((k) => k.id !== id);
+    save(); render(); toast("Gelöscht");
+  }
+
+  /* ---------- View: Personen ---------- */
+  function renderPersonen(root) {
+    root.appendChild(sectionHead("Personen", "Wer teilt sich das Budget? Grundlage für später getrennte Profile.",
+      el("button", { class: "btn primary", onclick: () => openPersonModal() }, "+ Person")));
+
+    root.appendChild(el("div", { class: "list" }, ...state.personen.map((p) => {
+      const einn = state.einnahmen.filter((e) => e.person === p.id).length;
+      const zahl = state.zahlungen.filter((z) => z.person === p.id).length;
+      return el("div", { class: "item" },
+        el("span", { class: "swatch", style: "background:var(--primary)" }),
+        el("div", { class: "main" },
+          el("div", { class: "title" }, p.name),
+          el("div", { class: "meta" }, `${einn} Einnahme(n) · ${zahl} Zahlung(en)`)),
+        el("div", { class: "value" }, ""),
+        el("div", { class: "actions" },
+          el("button", { class: "btn ghost icon", title: "Bearbeiten", onclick: () => openPersonModal(p) }, icon("edit")),
+          el("button", { class: "btn danger icon", title: "Löschen", onclick: () => removePerson(p.id) }, icon("trash")))
+      );
+    })));
+  }
+
+  function openPersonModal(entry) {
+    const isNew = !entry;
+    const p = entry || { id: uid("p"), name: "" };
+    openModal(isNew ? "Neue Person" : "Person bearbeiten", [
+      textField("name", "Name", p.name, "z. B. dein Name oder der deiner Frau"),
+    ], (vals) => {
+      const name = vals.name.trim();
+      if (!name) { toast("Bitte Name angeben"); return false; }
+      const rec = { id: p.id, name };
+      const i = state.personen.findIndex((x) => x.id === p.id);
+      if (i >= 0) state.personen[i] = rec; else state.personen.push(rec);
+      save(); render(); toast(isNew ? "Person hinzugefügt" : "Gespeichert");
+    });
+  }
+
+  function removePerson(id) {
+    if (state.personen.length <= 1) { toast("Mindestens eine Person muss bleiben"); return; }
+    const count = state.einnahmen.filter((e) => e.person === id).length +
+      state.zahlungen.filter((z) => z.person === id).length;
+    const fallback = state.personen.find((p) => p.id !== id);
+    const msg = count > 0
+      ? `Diese Person ist ${count}× zugeordnet. Diese Einträge werden „${fallback.name}“ zugewiesen. Fortfahren?`
+      : "Diese Person löschen?";
+    if (!confirm(msg)) return;
+    state.einnahmen.forEach((e) => { if (e.person === id) e.person = fallback.id; });
+    state.zahlungen.forEach((z) => { if (z.person === id) z.person = fallback.id; });
+    state.personen = state.personen.filter((p) => p.id !== id);
+    if (personFilter === id) personFilter = "all";
     save(); render(); toast("Gelöscht");
   }
 

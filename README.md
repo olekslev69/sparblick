@@ -17,10 +17,12 @@ Zum Sichern oder Übertragen gibt es Export/Import als JSON-Datei.
   halbjährlich, jährlich), Kategorie, Notiz. Alle Beträge werden automatisch auf einen
   **Monatswert** umgerechnet. Zahlungen lassen sich pausieren.
 - **Kategorien:** frei anpassbar mit eigener Farbe.
-- **Personen / spätere getrennte Budgets:** Jede Einnahme und Zahlung kann einer
-  Person zugeordnet werden (Ich / Partnerin / Gemeinsam …). Über die **Ansicht** oben
-  rechts lässt sich alles zusammen oder pro Person betrachten – die Grundlage für
-  später vollständig getrennte Budgets.
+- **Personen / spätere getrennte Budgets:** Im Tab **Personen** lassen sich Personen
+  anlegen, umbenennen und löschen (z. B. „Partnerin" durch den echten Namen ersetzen).
+  Jede Einnahme und Zahlung kann einer Person zugeordnet werden. Über die **Ansicht**
+  oben rechts lässt sich alles zusammen oder pro Person betrachten – die Grundlage für
+  später vollständig getrennte Budgets. Beim Löschen einer Person werden ihre Einträge
+  automatisch einer anderen Person zugewiesen (keine Daten gehen verloren).
 - **Daten:** Export/Import als JSON, Zurücksetzen.
 
 > Gemeinsame Alltagsausgaben (z. B. Lebensmittel) trägst du am einfachsten als eine
