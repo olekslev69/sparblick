@@ -105,15 +105,17 @@
       import_question: "Wie sollen die importierten Daten übernommen werden?",
       merge: "Zusammenführen", replace: "Ersetzen", merged: "Daten zusammengeführt", replaced: "Daten ersetzt",
       // DKB-Import
-      dkb_card_title: "Import aus Bank (DKB, FYRST)",
-      dkb_card_text: "Lies eine Bank-Umsatzliste (CSV) ein – unterstützt werden DKB und FYRST. Die App erkennt wiederkehrende Zahlungen und Lebensmittel automatisch – du bestätigst per Häkchen, bevor etwas hinzugefügt wird. Umbuchungen, Steuern und Investitionen werden ignoriert.",
+      dkb_card_title: "Import aus Bank (DKB, FYRST, Amex)",
+      dkb_card_text: "Lies eine Bank-Umsatzliste (CSV) ein – unterstützt werden DKB, FYRST und Amex. Die App erkennt wiederkehrende Zahlungen und fasst Lebensmittel, Drogerie und Laden zu je einem Posten zusammen – du bestätigst per Häkchen, bevor etwas hinzugefügt wird. Umbuchungen, Steuern, Erstattungen und Investitionen werden ignoriert.",
       dkb_import_btn: " Umsatzliste (CSV) importieren",
-      dkb_not_recognized: "Kein bekanntes Bank-Format erkannt (DKB, FYRST)",
+      dkb_not_recognized: "Kein bekanntes Bank-Format erkannt (DKB, FYRST, Amex)",
       dkb_nothing: "Keine wiederkehrenden Zahlungen oder Lebensmittel gefunden",
       dkb_preview_title: "Bank-Import – Vorschau",
       dkb_preview_intro: "{n} Vorschläge erkannt · {ign} Umsätze ignoriert (Umbuchungen, Investitionen, Sonstiges).",
       dkb_for_all: "Für alle:",
       dkb_groceries: "Lebensmittel",
+      agg_drogerie: "Drogerie",
+      agg_laden: "Auto: Laden",
       dkb_add_btn: "{n} übernehmen",
       dkb_imported: "{n} Zahlung(en) importiert",
       dkb_none_selected: "Nichts ausgewählt",
@@ -214,15 +216,17 @@
       file_label: "File", import_title: "Import data",
       import_question: "How should the imported data be applied?",
       merge: "Merge", replace: "Replace", merged: "Data merged", replaced: "Data replaced",
-      dkb_card_title: "Import from bank (DKB, FYRST)",
-      dkb_card_text: "Read a bank transaction list (CSV) – DKB and FYRST are supported. The app detects recurring payments and groceries automatically – you confirm with checkboxes before anything is added. Transfers, taxes and investments are ignored.",
+      dkb_card_title: "Import from bank (DKB, FYRST, Amex)",
+      dkb_card_text: "Read a bank transaction list (CSV) – DKB, FYRST and Amex are supported. The app detects recurring payments and combines groceries, drugstore and charging into one entry each – you confirm with checkboxes before anything is added. Transfers, taxes, refunds and investments are ignored.",
       dkb_import_btn: " Import transactions (CSV)",
-      dkb_not_recognized: "No known bank format recognized (DKB, FYRST)",
+      dkb_not_recognized: "No known bank format recognized (DKB, FYRST, Amex)",
       dkb_nothing: "No recurring payments or groceries found",
       dkb_preview_title: "Bank import – preview",
       dkb_preview_intro: "{n} suggestions detected · {ign} transactions ignored (transfers, investments, other).",
       dkb_for_all: "For all:",
       dkb_groceries: "Groceries",
+      agg_drogerie: "Drugstore",
+      agg_laden: "Car: charging",
       dkb_add_btn: "Add {n}",
       dkb_imported: "{n} payment(s) imported",
       dkb_none_selected: "Nothing selected",
@@ -1208,10 +1212,21 @@
   }
 
   /* ----- Import aus Bank-Umsatzliste (CSV) ----- */
-  // Kategorie-Regeln (bank-unabhängig): erkennen wiederkehrende Zahlungen und
-  // Lebensmittel anhand von Empfänger/Verwendungszweck. Erst-Treffer gewinnt.
+  // Sammelposten: gleichartige Kleinbeträge werden pro Import zu EINER Zahlung
+  // zusammengefasst (statt vieler Einzelbuchungen). Key = stabiler Import-Schlüssel.
+  const AGG_BUCKETS = {
+    grocery:  { key: "grocery",  labelKey: "dkb_groceries", catDefId: "k_lebensmittel", catDe: "Lebensmittel (pauschal)", catEn: "Groceries (lump sum)" },
+    drogerie: { key: "drogerie", labelKey: "agg_drogerie",  catDefId: null,             catDe: "Drogerie & Haushalt",     catEn: "Drugstore & household" },
+    laden:    { key: "laden",    labelKey: "agg_laden",     catDefId: null,             catDe: "Auto & Mobilität",        catEn: "Car & mobility" },
+  };
+
+  // Kategorie-Regeln (bank-unabhängig): erkennen wiederkehrende Zahlungen bzw.
+  // ordnen Buchungen einem Sammelposten (`aggregate`) zu. Erst-Treffer gewinnt –
+  // spezielle Regeln (Laden/Drogerie) stehen daher vor der Lebensmittel-Regel.
   const CATEGORY_RULES = [
-    { re: /supermarkt|\brewe\b|\baldi\b|\blidl\b|edeka|kaufland|\bpenny\b|\bnetto\b|rossmann|\bdm\b|b(ä|ae)cker|metro|alnatura|denns|tegut/i, grocery: true },
+    { re: /ladesäule|ladesaeule|e-lade|\be-?laden\b|supercharg|\bionity\b|ewe go|aral pulse|allego|\btesla\b/i, aggregate: "laden" },
+    { re: /rossmann|\bdm\b|\bm(ü|ue)ller\b|drogerie|douglas/i, aggregate: "drogerie" },
+    { re: /supermarkt|\brewe\b|\baldi\b|\blidl\b|edeka|kaufland|\bpenny\b|\bnetto\b|b(ä|ae)cker|metro|alnatura|denns|tegut/i, aggregate: "grocery" },
     { re: /\bmiete\b/i, catDefId: "k_wohnen", catDe: "Wohnen & Miete", catEn: "Housing & rent", name: "Miete" },
     { re: /octopus|energy|energie|\bstrom\b|stadtwerke|e\.?on\b|vattenfall|enbw|mainova/i, catDefId: null, catDe: "Strom & Energie", catEn: "Electricity & energy" },
     { re: /versicher|signal iduna|baloise|allianz|\bhuk\b|\baxa\b|\bergo\b|debeka|generali|provinzial|rentenversicherung|krankenkasse|krankenversicher|\bbarmer\b|\baok\b|\bdak\b/i, catDefId: "k_versicherung", catDe: "Versicherungen", catEn: "Insurance" },
@@ -1406,28 +1421,72 @@
     },
   };
 
+  const amexParser = {
+    id: "amex",
+    label: "Amex",
+    detect(lines) { return lines.some((l) => /beschreibung/i.test(l) && /betrag/i.test(l)); },
+    parse(lines) {
+      const headerIdx = lines.findIndex((l) => /beschreibung/i.test(l) && /betrag/i.test(l));
+      if (headerIdx < 0) return null;
+      const header = splitCsvLine(lines[headerIdx], ",").map((h) => h.trim());
+      const idx = {
+        desc: header.findIndex((h) => /beschreibung|description/i.test(h)),
+        betrag: header.findIndex((h) => /betrag|amount/i.test(h)),
+        datum: header.findIndex((h) => /datum|date/i.test(h)),
+      };
+      if (idx.betrag < 0 || idx.desc < 0) return null;
+
+      const rows = [];
+      const monthCount = {}; // dominanten Monat für die Sammelposten-Bezeichnung finden
+      for (let i = headerIdx + 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const r = splitCsvLine(lines[i], ",");
+        const amount = parseDeNum(r[idx.betrag]);
+        if (!isFinite(amount) || amount === 0) continue;
+        if (idx.datum >= 0 && amount > 0) {
+          const m = /(\d{1,2})[./](\d{1,2})[./](\d{2,4})/.exec(r[idx.datum] || "");
+          if (m) { const k = (+m[3] < 100 ? +m[3] + 2000 : +m[3]) + "-" + (+m[2]); monthCount[k] = (monthCount[k] || 0) + 1; }
+        }
+        rows.push({
+          payee: (r[idx.desc] || "").trim(),
+          purpose: "",
+          payer: "",
+          amount: Math.abs(amount),
+          expense: amount > 0, // Kreditkarte: positiv = Ausgabe, negativ = Gutschrift/Zahlung/Erstattung
+          self: false,
+        });
+      }
+      let period = "", best = 0;
+      for (const k of Object.keys(monthCount)) { if (monthCount[k] > best) { best = monthCount[k]; const p = k.split("-"); period = monthLabel(+p[1], +p[0]); } }
+      return { rows, period };
+    },
+  };
+
   // Registrierte Bank-Parser. Für eine neue Bank hier einen weiteren Parser eintragen.
-  const BANK_PARSERS = [dkbParser, fyrstParser];
+  const BANK_PARSERS = [dkbParser, fyrstParser, amexParser];
 
   // Wendet die (bank-unabhängigen) Kategorie-Regeln auf eine normalisierte
   // Buchungsliste an und fasst Lebensmittel zu einer Summe zusammen.
   function classifyRows(rows, period) {
-    let grocery = 0, ignored = 0;
+    const agg = {}; let ignored = 0;
     const suggestions = [];
     for (const row of rows) {
       if (!row.expense) continue; // nur Ausgaben
       if (!isFinite(row.amount) || row.amount <= 0) continue;
       if (row.self) { ignored++; continue; } // Umbuchung / Gemeinschaftskonto ignorieren
       const rule = CATEGORY_RULES.find((x) => x.re.test((row.payee + " " + row.purpose).toLowerCase()));
-      if (!rule) { ignored++; continue; }
-      if (rule.grocery) { grocery += row.amount; continue; }
+      if (!rule || rule.ignore) { ignored++; continue; }
+      if (rule.aggregate) { agg[rule.aggregate] = (agg[rule.aggregate] || 0) + row.amount; continue; }
       // key = stabiler Händler-Fingerabdruck (überlebt das Umbenennen der Zahlung)
       suggestions.push({ name: rule.name || cleanMerchant(row.payee), key: "m:" + normName(row.payee), betrag: row.amount, catDefId: rule.catDefId, catDe: rule.catDe, catEn: rule.catEn });
     }
-    if (grocery > 0) {
-      grocery = Math.round(grocery * 100) / 100;
-      suggestions.push({ name: t("dkb_groceries") + (period ? " (" + period + ")" : ""), key: "grocery", betrag: grocery,
-        catDefId: "k_lebensmittel", catDe: "Lebensmittel (pauschal)", catEn: "Groceries (lump sum)" });
+    // Sammelposten je Kategorie (Lebensmittel, Drogerie, Laden …) als eine Zahlung
+    for (const id of Object.keys(AGG_BUCKETS)) {
+      const sum = Math.round((agg[id] || 0) * 100) / 100;
+      if (sum <= 0) continue;
+      const bkt = AGG_BUCKETS[id];
+      suggestions.push({ name: t(bkt.labelKey) + (period ? " (" + period + ")" : ""), key: bkt.key, betrag: sum,
+        catDefId: bkt.catDefId, catDe: bkt.catDe, catEn: bkt.catEn });
     }
     let backfilled = false;
     suggestions.forEach((s) => { const r = suggestionExists(s); s.exists = r.exists; if (r.backfilled) backfilled = true; });

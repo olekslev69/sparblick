@@ -26,9 +26,9 @@ per Suche, Kategorie und Sortierung filterbar:
 
 ![Zahlungen und Verträge](docs/img/zahlungen.png)
 
-**Bank-Import (DKB & FYRST)** – aus einer Umsatzliste (CSV) werden wiederkehrende Zahlungen
-erkannt und Lebensmittel zusammengefasst; du bestätigst per Häkchen, bereits vorhandene
-Zahlungen werden markiert (Beispieldaten):
+**Bank-Import (DKB, FYRST & Amex)** – aus einer Umsatzliste (CSV) werden wiederkehrende Zahlungen
+erkannt und Lebensmittel/Drogerie/Laden zusammengefasst; du bestätigst per Häkchen, bereits
+vorhandene Zahlungen werden markiert (frei erfundene Beispieldaten):
 
 ![Bank-Import – Vorschau](docs/img/import.png)
 
@@ -57,13 +57,14 @@ Zahlungen werden markiert (Beispieldaten):
   oben rechts lässt sich alles zusammen oder pro Person betrachten – die Grundlage für
   später vollständig getrennte Budgets. Beim Löschen einer Person werden ihre Einträge
   automatisch einer anderen Person zugewiesen (keine Daten gehen verloren).
-- **Bank-Import (DKB & FYRST):** Unter **Daten** lässt sich eine **Umsatzliste (CSV)**
-  einlesen – aktuell werden die Formate von **DKB** und **FYRST** erkannt. Die App erkennt
-  automatisch **wiederkehrende Zahlungen** (Miete, Versicherungen inkl. Krankenkasse, Strom,
-  Abos, Telefon, Auto/KFZ, Software …) und fasst alle **Lebensmitteleinkäufe** (inkl.
-  Bäckereien) zu **einer pauschalen Zahlung** zusammen. Umbuchungen aufs eigene oder
-  **Gemeinschaftskonto**, **Steuern**, Investitionen und Bargeld-Abhebungen werden
-  **ignoriert**. Es wird nichts automatisch übernommen – jeder Vorschlag wird in einer
+- **Bank-Import (DKB, FYRST & Amex):** Unter **Daten** lässt sich eine **Umsatzliste (CSV)**
+  einlesen – aktuell werden die Formate von **DKB**, **FYRST** und **American Express** erkannt
+  (Amex mit umgekehrtem Vorzeichen: Gutschriften/Zahlungen werden korrekt ausgenommen). Die App
+  erkennt automatisch **wiederkehrende Zahlungen** (Miete, Versicherungen inkl. Krankenkasse,
+  Strom, Abos, Telefon, Auto/KFZ, Software …) und fasst gleichartige Kleinbeträge zu je **einem
+  Sammelposten** zusammen: **Lebensmittel** (inkl. Bäckereien), **Drogerie & Haushalt** und
+  **Auto: Laden** (E-Auto). Umbuchungen aufs eigene oder **Gemeinschaftskonto**, **Steuern**,
+  Investitionen, Erstattungen und Bargeld-Abhebungen werden **ignoriert**. Es wird nichts automatisch übernommen – jeder Vorschlag wird in einer
   **Vorschau per Häkchen bestätigt**; bereits vorhandene Zahlungen werden erkannt und nicht
   doppelt angelegt (sicher beim monatlichen Re-Import) – **auch wenn du die Zahlung
   umbenannt hast**, denn jede importierte Zahlung merkt sich intern ihren Ursprung. Der
