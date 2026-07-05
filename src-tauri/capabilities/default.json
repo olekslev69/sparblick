@@ -9,11 +9,11 @@
     "fs:default",
     {
       "identifier": "fs:allow-write-text-file",
-      "allow": [{ "path": "**" }]
+      "allow": [{ "path": "$HOME/**" }, { "path": "$APPDATA/**" }]
     },
     {
       "identifier": "fs:allow-read-text-file",
-      "allow": [{ "path": "**" }]
+      "allow": [{ "path": "$HOME/**" }, { "path": "$APPDATA/**" }]
     }
   ]
 }

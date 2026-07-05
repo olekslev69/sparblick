@@ -351,7 +351,6 @@
     const n = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
       if (k === "class") n.className = v;
-      else if (k === "html") n.innerHTML = v;
       else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
       else if (v !== null && v !== undefined && v !== false) n.setAttribute(k, v);
     }
@@ -382,7 +381,10 @@
     Object.entries({ viewBox: "0 0 24 24", width: 17, height: 17, fill: "none",
       stroke: "currentColor", "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round" })
       .forEach(([k, v]) => svg.setAttribute(k, v));
-    svg.innerHTML = ICONS[name];
+    const parsed = new DOMParser().parseFromString(`<svg xmlns="${NS}">${ICONS[name]}</svg>`, "image/svg+xml");
+    for (const child of parsed.documentElement.childNodes) {
+      svg.appendChild(svg.ownerDocument.importNode(child, true));
+    }
     return svg;
   }
 
@@ -1147,7 +1149,7 @@
       try {
         const parsed = JSON.parse(text);
         if (!parsed || typeof parsed !== "object") throw new Error("ungültig");
-        incoming = migrate(parsed);
+        incoming = sanitizeImport(migrate(parsed));
       } catch (e) {
         toast(t("file_unreadable"));
         return;
@@ -1188,7 +1190,8 @@
       if (existing) { katIdMap[k.id] = existing.id; continue; }
       let id = k.id;
       if (result.kategorien.some((x) => x.id === id)) id = uid("k");
-      result.kategorien.push({ id, name: k.name, farbe: k.farbe });
+      const safeFarbe = typeof k.farbe === "string" && /^#[0-9a-fA-F]{6}$/.test(k.farbe) ? k.farbe : PALETTE[0];
+      result.kategorien.push({ id, name: k.name, farbe: safeFarbe });
       katIdMap[k.id] = id;
     }
 
@@ -1209,6 +1212,17 @@
     addEntries(result.sparplaene, incoming.sparplaene);
 
     return result;
+  }
+
+  function sanitizeImport(data) {
+    if (Array.isArray(data.kategorien)) {
+      for (const k of data.kategorien) {
+        if (typeof k.farbe !== "string" || !/^#[0-9a-fA-F]{6}$/.test(k.farbe)) {
+          k.farbe = PALETTE[0];
+        }
+      }
+    }
+    return data;
   }
 
   /* ----- Import aus Bank-Umsatzliste (CSV) ----- */
@@ -1239,7 +1253,10 @@
 
   function splitCsvLine(line, sep) {
     const out = []; let cur = ""; let inQ = false;
+    const MAX_LEN = 10000, MAX_FIELDS = 50;
+    if (line.length > MAX_LEN) line = line.slice(0, MAX_LEN);
     for (let i = 0; i < line.length; i++) {
+      if (out.length >= MAX_FIELDS) break;
       const c = line[i];
       if (inQ) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; } else cur += c; }
       else if (c === '"') inQ = true;
@@ -1354,7 +1371,8 @@
       if (zl) { const m = /(\d{2})\.(\d{2})\.(\d{2,4})\s*-/.exec(zl); if (m) period = monthLabel(+m[2], +m[3]); }
 
       const rows = [];
-      for (let i = headerIdx + 1; i < lines.length; i++) {
+      const MAX_ROWS = 10000;
+      for (let i = headerIdx + 1; i < lines.length && rows.length < MAX_ROWS; i++) {
         if (!lines[i].trim()) continue;
         const r = splitCsvLine(lines[i], ";");
         const typ = idx.typ >= 0 ? (r[idx.typ] || "").trim().toLowerCase() : "";
@@ -1364,10 +1382,9 @@
           purpose: idx.vz >= 0 ? (r[idx.vz] || "").trim() : "",
           payer: idx.pay >= 0 ? (r[idx.pay] || "").trim() : "",
           amount: Math.abs(amount),
-          expense: idx.typ >= 0 ? typ === "ausgang" : amount < 0, // nur Ausgaben zählen später
+          expense: idx.typ >= 0 ? typ === "ausgang" : amount < 0,
         });
       }
-      // Eigene/gemeinsame Konten erkennen und als Transfer markieren (werden ignoriert).
       const ownerTokens = deriveOwner(rows);
       rows.forEach((row) => { row.self = isSelfTransfer(row.payee, ownerTokens); });
       return { rows, period };
@@ -1397,20 +1414,21 @@
       if (zl) { const m = /(\d{1,2})\.(\d{1,2})\.(\d{2,4})/.exec(zl); if (m) period = monthLabel(+m[2], +m[3]); }
 
       const rows = [];
-      for (let i = headerIdx + 1; i < lines.length; i++) {
+      const MAX_ROWS = 10000;
+      for (let i = headerIdx + 1; i < lines.length && rows.length < MAX_ROWS; i++) {
         if (!lines[i].trim()) continue;
         const r = splitCsvLine(lines[i], ";");
-        if (r.length < header.length - 2) continue; // Summenzeilen ("Kontostand;…") überspringen
+        if (r.length < header.length - 2) continue;
         const ums = idx.ums >= 0 ? (r[idx.ums] || "").toLowerCase() : "";
-        if (/auszahlung|einzahlung|bargeld/.test(ums)) continue; // Bargeld-Bewegungen sind keine Budgetposten
+        if (/auszahlung|einzahlung|bargeld/.test(ums)) continue;
         const amount = parseDeNum(r[idx.betrag]);
         if (!isFinite(amount) || amount === 0) continue;
         const vz = idx.vz >= 0 ? (r[idx.vz] || "").trim() : "";
         const mand = idx.mand >= 0 ? (r[idx.mand] || "").trim() : "";
         rows.push({
           payee: (r[idx.emp] || "").trim(),
-          purpose: (vz + " " + mand).trim(), // Mandatsreferenz mitnehmen (enthält z. B. "KFZ …")
-          payer: "", // FYRST liefert keine eigene Kontoinhaber-Spalte
+          purpose: (vz + " " + mand).trim(),
+          payer: "",
           amount: Math.abs(amount),
           expense: amount < 0,
         });
@@ -1437,8 +1455,9 @@
       if (idx.betrag < 0 || idx.desc < 0) return null;
 
       const rows = [];
+      const MAX_ROWS = 10000;
       const monthCount = {}; // dominanten Monat für die Sammelposten-Bezeichnung finden
-      for (let i = headerIdx + 1; i < lines.length; i++) {
+      for (let i = headerIdx + 1; i < lines.length && rows.length < MAX_ROWS; i++) {
         if (!lines[i].trim()) continue;
         const r = splitCsvLine(lines[i], ",");
         const amount = parseDeNum(r[idx.betrag]);
