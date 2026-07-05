@@ -65,8 +65,10 @@ Zahlungen werden markiert (Beispieldaten):
   **Gemeinschaftskonto**, **Steuern**, Investitionen und Bargeld-Abhebungen werden
   **ignoriert**. Es wird nichts automatisch übernommen – jeder Vorschlag wird in einer
   **Vorschau per Häkchen bestätigt**; bereits vorhandene Zahlungen werden erkannt und nicht
-  doppelt angelegt (sicher beim monatlichen Re-Import). Der Importer ist so aufgebaut, dass
-  sich **weitere Banken** leicht ergänzen lassen (siehe [CONTRIBUTING.md](CONTRIBUTING.md)).
+  doppelt angelegt (sicher beim monatlichen Re-Import) – **auch wenn du die Zahlung
+  umbenannt hast**, denn jede importierte Zahlung merkt sich intern ihren Ursprung. Der
+  Importer ist so aufgebaut, dass sich **weitere Banken** leicht ergänzen lassen (siehe
+  [CONTRIBUTING.md](CONTRIBUTING.md)).
 - **Daten:** vollständiges Backup als **JSON** (Export/Import) mit allen Einnahmen,
   Zahlungen, Sparraten, Kategorien und Personen. Beim Import wählbar: bestehende Daten
   **ersetzen** oder mit den importierten **zusammenführen** (ohne Duplikate) – ideal, um

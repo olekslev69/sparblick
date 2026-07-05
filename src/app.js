@@ -1243,15 +1243,31 @@
     return m >= Math.min(2, ownerTokens.length);
   }
 
-  // Gibt es bereits eine Zahlung mit (ähnlichem) Namen? -> Duplikate beim Re-Import vermeiden.
-  function zahlungExists(name) {
-    const n = normName(name);
-    if (!n) return false;
-    return state.zahlungen.some((z) => {
-      const zn = normName(z.bezeichnung);
-      if (!zn) return false;
-      return zn === n || (n.length >= 4 && zn.includes(n)) || (zn.length >= 4 && n.includes(zn));
-    });
+  // Passen zwei Bezeichnungen zusammen (unscharf)?
+  function namesMatch(a, b) {
+    const n = normName(a), zn = normName(b);
+    if (!n || !zn) return false;
+    return zn === n || (n.length >= 4 && zn.includes(n)) || (zn.length >= 4 && n.includes(zn));
+  }
+
+  // Ist ein Vorschlag bereits als Zahlung vorhanden? -> Duplikate beim Re-Import vermeiden.
+  // Erkennung in dieser Reihenfolge:
+  //  1) über den stabilen Import-Schlüssel (`importKey`) – überlebt das Umbenennen.
+  //  2) über den Namen – und trägt dabei den Schlüssel nach, damit ein späteres
+  //     Umbenennen den Eintrag nicht erneut importiert.
+  // Gibt { exists, backfilled } zurück.
+  function suggestionExists(s) {
+    if (s.key) {
+      const byKey = state.zahlungen.find((z) => z.importKey && z.importKey === s.key);
+      if (byKey) return { exists: true, backfilled: false };
+    }
+    const byName = state.zahlungen.find((z) => namesMatch(s.name, z.bezeichnung));
+    if (byName) {
+      let backfilled = false;
+      if (s.key && !byName.importKey) { byName.importKey = s.key; backfilled = true; }
+      return { exists: true, backfilled };
+    }
+    return { exists: false, backfilled: false };
   }
 
   function importKat(defId, deName, enName) {
@@ -1383,14 +1399,17 @@
       const rule = CATEGORY_RULES.find((x) => x.re.test((row.payee + " " + row.purpose).toLowerCase()));
       if (!rule) { ignored++; continue; }
       if (rule.grocery) { grocery += row.amount; continue; }
-      suggestions.push({ name: rule.name || cleanMerchant(row.payee), betrag: row.amount, catDefId: rule.catDefId, catDe: rule.catDe, catEn: rule.catEn });
+      // key = stabiler Händler-Fingerabdruck (überlebt das Umbenennen der Zahlung)
+      suggestions.push({ name: rule.name || cleanMerchant(row.payee), key: "m:" + normName(row.payee), betrag: row.amount, catDefId: rule.catDefId, catDe: rule.catDe, catEn: rule.catEn });
     }
     if (grocery > 0) {
       grocery = Math.round(grocery * 100) / 100;
-      suggestions.push({ name: t("dkb_groceries") + (period ? " (" + period + ")" : ""), betrag: grocery,
+      suggestions.push({ name: t("dkb_groceries") + (period ? " (" + period + ")" : ""), key: "grocery", betrag: grocery,
         catDefId: "k_lebensmittel", catDe: "Lebensmittel (pauschal)", catEn: "Groceries (lump sum)" });
     }
-    suggestions.forEach((s) => { s.exists = zahlungExists(s.name); });
+    let backfilled = false;
+    suggestions.forEach((s) => { const r = suggestionExists(s); s.exists = r.exists; if (r.backfilled) backfilled = true; });
+    if (backfilled) save(); // nachgetragene Import-Schlüssel sichern
     suggestions.sort((a, b) => b.betrag - a.betrag);
     return { suggestions, ignored, period };
   }
@@ -1450,6 +1469,7 @@
         state.zahlungen.push({
           id: uid("z"), bezeichnung: (s._name.value.trim() || s.name), betrag: s.betrag,
           intervall, kategorieId: importKat(s.catDefId, s.catDe, s.catEn), person, notiz: "", faellig: "", aktiv: true,
+          importKey: s.key || "", // stabiler Schlüssel: Re-Import erkennt den Eintrag auch nach Umbenennen
         });
         n++;
       }
