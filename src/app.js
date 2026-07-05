@@ -6,6 +6,8 @@
   const STORAGE_KEY = "tyb_data_v1";
   const LANG_KEY = "tyb_lang";
   const CURRENCY = "EUR";
+  const APP_VERSION = "0.5.0"; // muss zur Version in package.json / tauri.conf.json passen
+  const REPO_URL = "https://github.com/olekslev69/sparblick";
 
   /* ---------- Sprache / i18n ---------- */
   const I18N = {
@@ -116,6 +118,16 @@
       dkb_imported: "{n} Zahlung(en) importiert",
       dkb_none_selected: "Nichts ausgewählt",
       dkb_exists: "bereits vorhanden",
+      // Über / Info
+      about: "Über Sparblick",
+      about_tagline: "Lokaler Vertrags- & Budget-Tracker",
+      about_version: "Version",
+      about_storage_title: "Wo liegen meine Daten?",
+      about_storage_text: "Alle Daten bleiben ausschließlich lokal auf diesem Gerät – im Browser-Speicher (localStorage, Schlüssel tyb_data_v1). Keine Cloud, keine Anmeldung, keine Übertragung an Server. Zum Sichern oder Übertragen dient Daten → Export/Import (JSON).",
+      about_banks: "Bank-Import",
+      about_repo: "Projektseite (GitHub)",
+      about_license: "Lizenz: Apache 2.0",
+      close_btn: "Schließen",
       // Standarddaten
       seed_p_ich: "Ich", seed_p_partner: "Partnerin", seed_p_gemeinsam: "Gemeinsam",
       seed_k_wohnen: "Wohnen & Miete", seed_k_versicherung: "Versicherungen", seed_k_sport: "Sport & Fitness",
@@ -215,6 +227,15 @@
       dkb_imported: "{n} payment(s) imported",
       dkb_none_selected: "Nothing selected",
       dkb_exists: "already added",
+      about: "About Sparblick",
+      about_tagline: "Local contract & budget tracker",
+      about_version: "Version",
+      about_storage_title: "Where is my data stored?",
+      about_storage_text: "All data stays exclusively on this device – in the browser storage (localStorage, key tyb_data_v1). No cloud, no sign-in, nothing sent to any server. Use Data → Export/Import (JSON) to back up or transfer it.",
+      about_banks: "Bank import",
+      about_repo: "Project page (GitHub)",
+      about_license: "License: Apache 2.0",
+      close_btn: "Close",
       seed_p_ich: "Me", seed_p_partner: "Partner", seed_p_gemeinsam: "Shared",
       seed_k_wohnen: "Housing & rent", seed_k_versicherung: "Insurance", seed_k_sport: "Sports & fitness",
       seed_k_abos: "Subscriptions & streaming", seed_k_mobilitaet: "Mobility & car", seed_k_telekom: "Phone & internet",
@@ -349,6 +370,7 @@
     play: '<path d="M7 4l13 8-13 8z"/>',
     download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
     upload: '<path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M5 3h14"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
   };
   function icon(name) {
     const NS = "http://www.w3.org/2000/svg";
@@ -1600,6 +1622,33 @@
     document.addEventListener("keydown", escClose);
   }
 
+  // „Über"-Dialog: Programmname, Version, Speicherort, unterstützte Importe, Links.
+  function openAbout() {
+    closeModal();
+    const banks = BANK_PARSERS.map((p) => p.label).join(", ");
+    const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => { if (e.target === backdrop) closeModal(); } },
+      el("div", { class: "modal", role: "dialog", "aria-label": t("about") },
+        el("div", { class: "modal-head" }, t("about")),
+        el("div", { class: "modal-body" },
+          el("div", { class: "about-head" },
+            el("span", { class: "brand-mark", "aria-hidden": "true" }),
+            el("div", {},
+              el("div", { class: "about-name" }, "Sparblick"),
+              el("div", { class: "hint" }, t("about_tagline")),
+              el("div", { class: "about-ver" }, t("about_version") + " " + APP_VERSION))),
+          el("div", {},
+            el("div", { class: "about-sub" }, t("about_storage_title")),
+            el("p", { class: "hint", style: "margin:6px 0 0" }, t("about_storage_text"))),
+          el("div", { class: "about-meta" },
+            el("div", {}, el("span", { class: "about-sub" }, t("about_banks") + ": "), el("span", { class: "hint" }, banks)),
+            el("a", { class: "about-link", href: REPO_URL, target: "_blank", rel: "noopener" }, t("about_repo")),
+            el("div", { class: "hint" }, t("about_license")))),
+        el("div", { class: "modal-foot" },
+          el("button", { class: "btn primary", onclick: closeModal }, t("close_btn")))));
+    $("#modalRoot").appendChild(backdrop);
+    document.addEventListener("keydown", escClose);
+  }
+
   /* ---------- Sprachumschalter ---------- */
   function buildLangToggle() {
     const hc = document.querySelector(".header-controls");
@@ -1608,10 +1657,14 @@
       el("button", { "data-lang": "de", onclick: () => setLang("de") }, "DE"),
       el("button", { "data-lang": "en", onclick: () => setLang("en") }, "EN"));
     hc.insertBefore(seg, hc.firstChild);
+    const about = el("button", { class: "icon-btn about-btn", title: t("about"), "aria-label": t("about"), onclick: openAbout }, icon("info"));
+    hc.appendChild(about);
     updateLangToggle();
   }
   function updateLangToggle() {
     document.querySelectorAll(".lang-seg button").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
+    const ab = document.querySelector(".about-btn");
+    if (ab) { ab.title = t("about"); ab.setAttribute("aria-label", t("about")); }
   }
   function setLang(l) {
     if (l === lang) return;

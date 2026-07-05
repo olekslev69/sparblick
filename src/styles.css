@@ -198,6 +198,18 @@ body {
 .imp-cat { display: flex; flex-wrap: wrap; gap: 6px; }
 .imp-amount { flex: none; font-weight: 700; white-space: nowrap; }
 
+/* Über-Dialog + Info-Button */
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-soft); cursor: pointer; }
+.icon-btn:hover { color: var(--primary); border-color: var(--primary); }
+.about-head { display: flex; align-items: center; gap: 14px; }
+.about-head .brand-mark { width: 40px; height: 40px; flex: none; }
+.about-name { font-size: 1.25rem; font-weight: 800; }
+.about-ver { margin-top: 4px; font-size: .82rem; font-weight: 600; color: var(--primary); }
+.about-sub { font-weight: 700; color: var(--text); }
+.about-meta { display: flex; flex-direction: column; gap: 6px; }
+.about-link { color: var(--primary); font-weight: 600; text-decoration: none; }
+.about-link:hover { text-decoration: underline; }
+
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field label { font-size: .82rem; font-weight: 600; color: var(--text-soft); }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
