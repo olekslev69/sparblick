@@ -1,6 +1,6 @@
 /* Service Worker für Sparblick (PWA) — cached die App-Shell für Offline-Betrieb.
  * Speichert KEINE Nutzerdaten; die liegen im localStorage des Geräts. */
-const CACHE = "sparblick-v1";
+const CACHE = "sparblick-v0.11.0"; // pro Release erhöhen, damit neue Dateien aktiv werden
 const ASSETS = [
   "./",
   "./index.html",
@@ -26,9 +26,19 @@ self.addEventListener("activate", (e) => {
   );
 });
 
+// Erlaubt der App, eine wartende neue Version sofort zu übernehmen.
+self.addEventListener("message", (e) => {
+  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
+});
+
 // Cache-first mit Netzwerk-Fallback; erfolgreiche GET-Antworten nachcachen.
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  // version.json immer frisch aus dem Netz (Update-Prüfung), sonst Cache als Fallback.
+  if (new URL(e.request.url).pathname.endsWith("version.json")) {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;

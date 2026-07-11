@@ -262,6 +262,11 @@ body {
 .about-ver { margin-top: 4px; font-size: .82rem; font-weight: 600; color: var(--primary); }
 .about-sub { font-weight: 700; color: var(--text); }
 .about-meta { display: flex; flex-direction: column; gap: 6px; }
+.about-update { margin-top: 2px; }
+.update-avail { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--primary-soft); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+.update-avail span { font-weight: 600; color: var(--primary); }
+.about-btn { position: relative; }
+.about-btn.has-update::after { content: ""; position: absolute; top: 5px; right: 5px; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); border: 2px solid var(--surface); }
 .about-link { color: var(--primary); font-weight: 600; text-decoration: none; }
 .about-link:hover { text-decoration: underline; }
 

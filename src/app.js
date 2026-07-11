@@ -7,8 +7,11 @@
   const LANG_KEY = "tyb_lang";
   const THEME_KEY = "tyb_theme";
   const CURRENCY = "EUR";
-  const APP_VERSION = "0.11.0"; // muss zur Version in package.json / tauri.conf.json passen
+  const APP_VERSION = "0.11.0"; // muss zur Version in package.json / tauri.conf.json + src/version.json passen
   const REPO_URL = "https://github.com/olekslev69/sparblick";
+  const RELEASES_URL = REPO_URL + "/releases";
+  // „Neueste Version" wird von GitHub Pages gelesen (auch aus der Desktop-App heraus).
+  const VERSION_URL = "https://olekslev69.github.io/sparblick/app/version.json";
 
   /* ---------- Sprache / i18n ---------- */
   const I18N = {
@@ -187,6 +190,14 @@
       about_banks: "Bank-Import",
       about_repo: "Projektseite (GitHub)",
       about_license: "Lizenz: Apache 2.0",
+      // Update-Prüfung
+      update_check: "Auf Updates prüfen",
+      update_checking: "Wird geprüft …",
+      update_current: "Du verwendest die neueste Version.",
+      update_available: "Neue Version {v} verfügbar",
+      update_download: "Zu den Downloads",
+      update_reload: "Jetzt aktualisieren",
+      update_failed: "Prüfung nicht möglich (offline?).",
       close_btn: "Schließen",
       // Standarddaten
       seed_p_ich: "Ich", seed_p_partner: "Partnerin", seed_p_gemeinsam: "Gemeinsam",
@@ -353,6 +364,14 @@
       about_banks: "Bank import",
       about_repo: "Project page (GitHub)",
       about_license: "License: Apache 2.0",
+      // Update check
+      update_check: "Check for updates",
+      update_checking: "Checking …",
+      update_current: "You're on the latest version.",
+      update_available: "New version {v} available",
+      update_download: "Go to downloads",
+      update_reload: "Update now",
+      update_failed: "Couldn't check (offline?).",
       close_btn: "Close",
       seed_p_ich: "Me", seed_p_partner: "Partner", seed_p_gemeinsam: "Shared",
       seed_k_wohnen: "Housing & rent", seed_k_versicherung: "Insurance", seed_k_sport: "Sports & fitness",
@@ -402,6 +421,83 @@
     try { localStorage.setItem(THEME_KEY, v); } catch (e) { /* ignore */ }
     applyTheme();
     updateThemePicker();
+  }
+
+  /* ---------- Update-Prüfung (Hinweis + Ein-Klick-Pfad, kein Auto-Install) ----------
+     Liest die neueste Version aus einer kleinen version.json auf GitHub Pages und
+     vergleicht sie mit APP_VERSION. Web/PWA: neu laden holt die neue Version.
+     Desktop: Link zu den Release-Downloads. */
+  const isDesktop = !!window.__TAURI__;
+  let updateVersion = null; // gesetzt, sobald eine neuere Version bekannt ist
+
+  function cmpVersion(a, b) {
+    const pa = String(a).split("."), pb = String(b).split(".");
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const x = parseInt(pa[i], 10) || 0, y = parseInt(pb[i], 10) || 0;
+      if (x > y) return 1;
+      if (x < y) return -1;
+    }
+    return 0;
+  }
+
+  async function checkForUpdate(manual) {
+    try {
+      const res = await fetch(VERSION_URL + "?t=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) throw new Error("http " + res.status);
+      const info = await res.json();
+      const latest = String((info && info.version) || "").trim();
+      if (latest && cmpVersion(latest, APP_VERSION) > 0) {
+        updateVersion = latest;
+        markUpdateAvailable();
+        return "available";
+      }
+      updateVersion = null;
+      if (manual) toast(t("update_current"));
+      return "current";
+    } catch (e) {
+      if (manual) toast(t("update_failed"));
+      return "error";
+    }
+  }
+
+  function markUpdateAvailable() {
+    const ab = document.querySelector(".about-btn");
+    if (ab) ab.classList.add("has-update");
+    const box = document.querySelector("#aboutUpdate");
+    if (box) renderAboutUpdate(box);
+  }
+
+  async function applyWebUpdate() {
+    try {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          await reg.update();
+          if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+      }
+    } catch (e) { /* ignore */ }
+    location.reload();
+  }
+
+  function renderAboutUpdate(box) {
+    while (box.firstChild) box.removeChild(box.firstChild);
+    if (updateVersion) {
+      const action = isDesktop
+        ? el("a", { class: "btn primary small", href: RELEASES_URL, target: "_blank", rel: "noopener" }, t("update_download"))
+        : el("button", { class: "btn primary small", onclick: applyWebUpdate }, t("update_reload"));
+      box.appendChild(el("div", { class: "update-avail" },
+        el("span", {}, t("update_available", { v: updateVersion })), action));
+    } else {
+      box.appendChild(el("button", {
+        class: "btn small", onclick: async (e) => {
+          const b = e.currentTarget;
+          b.disabled = true; b.textContent = t("update_checking");
+          await checkForUpdate(true);
+          renderAboutUpdate(box);
+        },
+      }, t("update_check")));
+    }
   }
 
   /* ---------- Intervalle: Umrechnung auf Monatsbetrag ---------- */
@@ -2345,6 +2441,7 @@
               el("div", { class: "about-name" }, el("span", { class: "brand-spar" }, "Spar"), "blick"),
               el("div", { class: "hint" }, t("about_tagline")),
               el("div", { class: "about-ver" }, t("about_version") + " " + APP_VERSION))),
+          el("div", { class: "about-update", id: "aboutUpdate" }),
           el("div", {},
             el("div", { class: "about-sub" }, t("about_storage_title")),
             el("p", { class: "hint", style: "margin:6px 0 0" }, t("about_storage_text"))),
@@ -2355,6 +2452,7 @@
         el("div", { class: "modal-foot" },
           el("button", { class: "btn primary", onclick: closeModal }, t("close_btn")))));
     $("#modalRoot").appendChild(backdrop);
+    renderAboutUpdate($("#aboutUpdate"));
     document.addEventListener("keydown", escClose);
   }
 
@@ -2405,6 +2503,7 @@
   applyTheme();
   buildLangToggle();
   render();
+  checkForUpdate(false); // still im Hintergrund; markiert das Info-Symbol bei neuer Version
 
   // PWA: Service Worker registrieren (nur im Browser über https/localhost;
   // im Desktop-Build/Tauri und unter file:// wird bewusst übersprungen).
