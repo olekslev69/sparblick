@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "landing/**"
+      - "docs/img/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -28,9 +30,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - name: Nur das Frontend (src/) veröffentlichen
+      - name: Seite zusammenbauen (Landing an der Wurzel, App unter /app/)
+        run: |
+          mkdir -p _site/app _site/img
+          cp -r landing/. _site/
+          cp -r src/. _site/app/
+          cp -r docs/img/. _site/img/
+      - name: Artefakt hochladen
         uses: actions/upload-pages-artifact@v3
         with:
-          path: src
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

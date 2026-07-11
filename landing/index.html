@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Sparblick – lokaler Budget-Tracker für Paare & Familien</title>
+  <meta name="description" content="Sparblick ist ein kostenloser, lokaler Budget-Tracker: Einnahmen, Ausgaben, Sparziele und faire Aufteilung für Paare & Familien. Keine Cloud, keine Anmeldung – alles bleibt auf deinem Gerät." />
+  <link rel="icon" type="image/png" href="app/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="app/icons/icon-192.png" />
+  <meta name="theme-color" content="#6366f1" />
+  <!-- Open Graph / Twitter für Link-Vorschau (LinkedIn, WhatsApp …) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Sparblick" />
+  <meta property="og:title" content="Sparblick – dein Budget, privat & lokal" />
+  <meta property="og:description" content="Kostenloser Budget-Tracker für Paare & Familien: Ausgaben, Sparziele und faire Aufteilung. Keine Cloud, keine Anmeldung – alles bleibt auf deinem Gerät." />
+  <meta property="og:image" content="img/uebersicht.png" />
+  <meta property="og:url" content="https://olekslev69.github.io/sparblick/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Sparblick – dein Budget, privat & lokal" />
+  <meta name="twitter:description" content="Budget-Tracker für Paare & Familien. Keine Cloud, keine Anmeldung." />
+  <meta name="twitter:image" content="img/uebersicht.png" />
+  <style>
+    :root {
+      --bg: #f4f5fb; --surface: #ffffff; --surface-2: #f8f9ff; --border: #e6e8f0;
+      --text: #1e2233; --text-soft: #5b6178; --text-mute: #8a90a6;
+      --primary: #6366f1; --primary-soft: #eef0ff; --success: #10b981;
+      --shadow: 0 1px 2px rgba(30,34,51,.06), 0 8px 24px rgba(30,34,51,.06);
+      --shadow-lg: 0 24px 60px rgba(30,34,51,.14);
+      --radius: 16px; --radius-sm: 10px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #10121c; --surface: #191c2b; --surface-2: #1f2333; --border: #2b3048;
+        --text: #eceefb; --text-soft: #a9afc8; --text-mute: #767d9a;
+        --primary: #818cf8; --primary-soft: #262a45;
+        --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+        --shadow-lg: 0 30px 70px rgba(0,0,0,.5);
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: var(--primary); }
+    img { max-width: 100%; display: block; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+    .brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; color: var(--text); }
+    .brand-mark {
+      width: 30px; height: 30px; border-radius: 9px; flex: none;
+      background:
+        radial-gradient(circle closest-side at 44% 44%, #ffffff 0 9%, rgba(255,255,255,0) 12%),
+        radial-gradient(circle closest-side at 50% 50%, #1e1b4b 0 34%, rgba(30,27,75,0) 37%),
+        conic-gradient(#ffffff 0 40%, #34d399 40% 65%, #fbbf24 65% 85%, #f87171 85% 100%);
+      box-shadow: inset 0 0 0 6px var(--primary);
+    }
+    .brand-name { font-weight: 800; font-size: 1.2rem; letter-spacing: -.01em; }
+    .brand-spar { color: var(--primary); }
+    header.nav {
+      position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--surface) 85%, transparent);
+      backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--border);
+    }
+    .nav-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; max-width: 1080px; margin: 0 auto; }
+    .nav-links { display: flex; align-items: center; gap: 22px; }
+    .nav-links a { color: var(--text-soft); text-decoration: none; font-weight: 600; font-size: .92rem; }
+    .nav-links a:hover { color: var(--text); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: inherit; font-weight: 700; font-size: .95rem; cursor: pointer; text-decoration: none;
+      border-radius: var(--radius-sm); padding: 11px 20px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); transition: filter .12s, background .12s, transform .12s;
+    }
+    .btn:hover { background: var(--surface-2); }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn.primary:hover { filter: brightness(1.07); transform: translateY(-1px); }
+    .btn.lg { padding: 14px 26px; font-size: 1.02rem; }
+    .hero { text-align: center; padding: 72px 0 40px; }
+    .eyebrow { display: inline-block; font-weight: 700; font-size: .82rem; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--primary); background: var(--primary-soft); padding: 6px 14px; border-radius: 999px; margin-bottom: 20px; }
+    .hero h1 { font-size: clamp(2.1rem, 5.5vw, 3.4rem); line-height: 1.1; letter-spacing: -.025em; margin: 0 auto 18px; max-width: 15ch; }
+    .hero p.lead { font-size: clamp(1.05rem, 2.4vw, 1.28rem); color: var(--text-soft); max-width: 62ch; margin: 0 auto 30px; }
+    .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .cta-note { margin-top: 16px; font-size: .86rem; color: var(--text-mute); }
+    .shot { border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; background: var(--surface); }
+    .hero-shot { max-width: 940px; margin: 44px auto 0; }
+    .trust { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--surface); }
+    .trust-in { display: flex; flex-wrap: wrap; gap: 10px 26px; justify-content: center; padding: 18px 20px; }
+    .trust-in span { font-weight: 600; color: var(--text-soft); font-size: .94rem; }
+    .trust-in b { color: var(--primary); }
+    section { padding: 62px 0; }
+    .sec-head { text-align: center; max-width: 60ch; margin: 0 auto 40px; }
+    .sec-head h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); letter-spacing: -.02em; margin: 0 0 12px; }
+    .sec-head p { color: var(--text-soft); font-size: 1.05rem; margin: 0; }
+    .grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+    .feature { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
+    .feature .ico { font-size: 1.7rem; line-height: 1; margin-bottom: 12px; }
+    .feature h3 { margin: 0 0 7px; font-size: 1.12rem; }
+    .feature p { margin: 0; color: var(--text-soft); font-size: .95rem; }
+    .split { display: grid; gap: 40px; align-items: center; grid-template-columns: 1fr; }
+    @media (min-width: 860px) { .split { grid-template-columns: 1fr 1fr; } .split.rev .txt { order: 2; } }
+    .split h2 { font-size: clamp(1.5rem, 3.5vw, 2rem); letter-spacing: -.02em; margin: 0 0 14px; }
+    .split ul { margin: 16px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .split li { padding-left: 30px; position: relative; color: var(--text-soft); }
+    .split li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--success); font-weight: 800; }
+    .split li b { color: var(--text); }
+    .privacy { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .privacy .sec-head p { font-size: 1.1rem; }
+    .lock { font-size: 2.6rem; }
+    .install-grid { display: grid; gap: 18px; grid-template-columns: 1fr; max-width: 760px; margin: 0 auto; }
+    @media (min-width: 720px) { .install-grid { grid-template-columns: 1fr 1fr; } }
+    .install-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 26px; }
+    .install-card h3 { margin: 0 0 6px; display: flex; align-items: center; gap: 9px; }
+    .install-card p { color: var(--text-soft); font-size: .95rem; margin: 0 0 16px; }
+    .install-card code { background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 2px 7px; font-size: .85rem; }
+    .steps { margin: 0 0 16px; padding-left: 20px; color: var(--text-soft); font-size: .92rem; }
+    .steps li { margin: 4px 0; }
+    .faq { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+    details { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 6px; }
+    summary { cursor: pointer; font-weight: 700; padding: 14px 12px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--text-mute); font-weight: 700; font-size: 1.3rem; }
+    details[open] summary::after { content: "–"; }
+    details p { margin: 0 12px 14px; color: var(--text-soft); }
+    footer { border-top: 1px solid var(--border); background: var(--surface); padding: 40px 0; }
+    .foot-in { display: flex; flex-wrap: wrap; gap: 20px 40px; justify-content: space-between; align-items: flex-start; }
+    footer .links { display: flex; flex-wrap: wrap; gap: 16px 22px; }
+    footer .links a { color: var(--text-soft); text-decoration: none; font-weight: 600; font-size: .9rem; }
+    footer .links a:hover { color: var(--text); }
+    footer small { color: var(--text-mute); font-size: .82rem; display: block; margin-top: 14px; max-width: 60ch; }
+    @media (max-width: 680px) { .nav-links { display: none; } .hero { padding: 48px 0 28px; } }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-in">
+      <a class="brand" href="#top" aria-label="Sparblick">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name"><span class="brand-spar">Spar</span>blick</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#funktionen">Funktionen</a>
+        <a href="#familien">Für Familien</a>
+        <a href="#datenschutz">Datenschutz</a>
+        <a href="https://github.com/olekslev69/sparblick" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <a class="btn primary" href="app/">App öffnen</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap">
+        <span class="eyebrow">Kostenlos · Lokal · Open Source</span>
+        <h1>Dein Budget im Blick – ganz ohne Cloud.</h1>
+        <p class="lead">
+          Sparblick ist ein kostenloser Budget-Tracker für <b>Paare, Familien und WGs</b>:
+          Einnahmen und Ausgaben, Sparziele und faire Aufteilung. Alles bleibt
+          <b>lokal auf deinem Gerät</b> – keine Anmeldung, kein Tracking.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary lg" href="app/">Jetzt kostenlos öffnen</a>
+          <a class="btn lg" href="https://github.com/olekslev69/sparblick/releases" target="_blank" rel="noopener">Für Desktop laden</a>
+        </div>
+        <div class="cta-note">Läuft im Browser, am Handy (PWA) und als Desktop-App · Deutsch &amp; Englisch</div>
+        <div class="shot hero-shot">
+          <img src="img/uebersicht.png" alt="Sparblick Dashboard: Einnahmen, Ausgaben, Sparquote und Aufteilung nach Kategorie" width="1180" height="1579" loading="eager" />
+        </div>
+      </div>
+    </section>
+
+    <div class="trust">
+      <div class="trust-in">
+        <span><b>100 %</b> lokal</span>
+        <span><b>Keine</b> Cloud</span>
+        <span><b>Keine</b> Anmeldung</span>
+        <span><b>Kein</b> Tracking</span>
+        <span><b>Kostenlos</b> &amp; Open Source</span>
+      </div>
+    </div>
+
+    <section id="funktionen">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Alles, um den Überblick zu behalten</h2>
+          <p>Von Fixkosten und Verträgen über Sparziele bis zur fairen Aufteilung im Haushalt.</p>
+        </div>
+        <div class="grid">
+          <div class="feature"><div class="ico">📊</div><h3>Übersicht &amp; Sparquote</h3><p>Einnahmen, Ausgaben, echte Sparquote und frei Verfügbares – mit Donut und Prozentanteil je Kategorie, wahlweise pro Monat oder Jahr.</p></div>
+          <div class="feature"><div class="ico">🏦</div><h3>Bank-Import (CSV)</h3><p>Umsatzlisten von <b>DKB, FYRST &amp; American Express</b> einlesen: wiederkehrende Ausgaben werden erkannt, Lebensmittel &amp; Co. zusammengefasst – du bestätigst per Häkchen.</p></div>
+          <div class="feature"><div class="ico">🎯</div><h3>Sparziele</h3><p>Ziele wie „Urlaub“ oder „Notgroschen“ mit Zielbetrag anlegen, Geld einzahlen, Fortschritt sehen – und „🎉 Ziel erreicht“ feiern.</p></div>
+          <div class="feature"><div class="ico">🤝</div><h3>Faire Aufteilung</h3><p>Gemeinsame Ausgaben <b>50/50</b>, <b>nach Einkommen</b> oder mit <b>eigenen Anteilen</b> (z. B. 30/70) aufteilen. Jede Person sieht ihren fairen Anteil.</p></div>
+          <div class="feature"><div class="ico">⏰</div><h3>Kündigungsfristen</h3><p>Vertragsende + Kündigungsfrist hinterlegen – Sparblick warnt rechtzeitig, bevor sich ein Vertrag automatisch verlängert.</p></div>
+          <div class="feature"><div class="ico">👨‍👩‍👧</div><h3>Personen &amp; Kinder</h3><p>Budget pro Person betrachten, Kinder markieren (Taschengeld, eigene Sparziele) – die Grundlage für getrennte Budgets.</p></div>
+          <div class="feature"><div class="ico">📄</div><h3>Export &amp; Drucken</h3><p>Vollständiges <b>JSON-Backup</b>, <b>CSV</b> für Excel/Numbers/Sheets und eine Ein-Seiten-<b>PDF-Zusammenfassung</b> fürs Familiengespräch.</p></div>
+          <div class="feature"><div class="ico">📱</div><h3>Überall &amp; offline</h3><p>Als Progressive Web App aufs Handy, als Desktop-App für macOS, Windows und Linux – funktioniert auch offline.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="familien" class="privacy">
+      <div class="wrap">
+        <div class="split">
+          <div class="txt">
+            <h2>Gemacht für Paare &amp; Familien</h2>
+            <p style="color:var(--text-soft)">Wer trägt was? Sparblick teilt gemeinsame Ausgaben fair auf – und jede Person sieht sofort ihren Anteil und was übrig bleibt.</p>
+            <ul>
+              <li><b>Drei Aufteilungs-Modi:</b> 50/50, anteilig nach Einkommen oder frei wählbar (z. B. 30/70).</li>
+              <li><b>Fairer Anteil pro Person:</b> eigene Ausgaben + Anteil an gemeinsamen Kosten.</li>
+              <li><b>Kinder &amp; Taschengeld:</b> Kinder zahlen bei der Aufteilung nicht mit, haben aber eigene Sparziele.</li>
+              <li><b>Optional &amp; für WGs:</b> Aufteilung lässt sich auch ausschalten.</li>
+            </ul>
+          </div>
+          <div class="shot"><img src="img/aufteilung.png" alt="Aufteilung gemeinsamer Ausgaben pro Person" width="1180" height="900" loading="lazy" /></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ziele">
+      <div class="wrap">
+        <div class="split rev">
+          <div class="shot"><img src="img/sparziele.png" alt="Sparziele mit Fortschrittsbalken und erreichtem Ziel" width="1180" height="860" loading="lazy" /></div>
+          <div class="txt">
+            <h2>Sparziele, die motivieren</h2>
+            <p style="color:var(--text-soft)">Leg dir Ziele an, zahl ein wann du willst, und sieh den Fortschritt wachsen.</p>
+            <ul>
+              <li><b>Zielbetrag &amp; Stand:</b> z. B. „Urlaub“ 1.200 € – du zahlst per Klick ein.</li>
+              <li><b>Fortschrittsbalken</b> mit Prozent und „noch X €“.</li>
+              <li><b>Sichtbar erreicht:</b> grüner Balken und „🎉 Ziel erreicht“.</li>
+              <li><b>Plus Sparraten:</b> ETF-Sparpläne &amp; Co. fließen als echte Sparquote ins Dashboard.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="datenschutz" class="privacy">
+      <div class="wrap">
+        <div class="sec-head">
+          <div class="lock">🔒</div>
+          <h2>Deine Zahlen gehören dir</h2>
+          <p>
+            Sparblick speichert <b>alles nur lokal auf deinem Gerät</b> (Browser-Speicher bzw. App-Ordner).
+            Es gibt <b>keinen Server, kein Konto und kein Tracking</b> – nichts wird übertragen.
+            Zum Sichern oder Übertragen dient ein einfacher JSON-Export. Veröffentlicht ist nur der Code, nie deine Daten.
+          </p>
+        </div>
+        <div style="text-align:center"><a class="btn primary lg" href="app/">Ausprobieren – ohne Anmeldung</a></div>
+      </div>
+    </section>
+
+    <section id="installieren">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>In einer Minute startklar</h2>
+          <p>Direkt im Browser nutzen, aufs Handy legen oder als Desktop-App installieren.</p>
+        </div>
+        <div class="install-grid">
+          <div class="install-card">
+            <h3>📱 Browser &amp; Handy (PWA)</h3>
+            <p>Nichts zu installieren – einfach öffnen. Am Handy zusätzlich über das Browser-Menü „Zum Startbildschirm hinzufügen“, dann läuft es im Vollbild und offline.</p>
+            <a class="btn primary" href="app/">App öffnen</a>
+          </div>
+          <div class="install-card">
+            <h3>💻 Desktop (macOS · Windows · Linux)</h3>
+            <p>Installer im Release-Bereich laden.</p>
+            <ol class="steps">
+              <li>Passende Datei laden (macOS Apple Silicon: <code>…_aarch64.dmg</code>).</li>
+              <li>macOS-Hinweis „beschädigt“? Einmalig im Terminal: <code>xattr -cr /Applications/Sparblick.app</code></li>
+              <li>Öffnen &amp; loslegen.</li>
+            </ol>
+            <a class="btn" href="https://github.com/olekslev69/sparblick/releases" target="_blank" rel="noopener">Zu den Downloads</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="privacy">
+      <div class="wrap">
+        <div class="sec-head"><h2>Häufige Fragen</h2></div>
+        <div class="faq">
+          <details open><summary>Was kostet Sparblick?</summary><p>Nichts. Sparblick ist kostenlos und Open Source (Apache-2.0-Lizenz).</p></details>
+          <details><summary>Wo werden meine Daten gespeichert?</summary><p>Ausschließlich lokal auf deinem Gerät – im Browser-Speicher bzw. im App-Ordner. Es gibt keinen Server und keine Cloud. Übertragen kannst du sie per JSON-Export/-Import selbst.</p></details>
+          <details><summary>Brauche ich ein Konto?</summary><p>Nein. Keine Registrierung, keine E-Mail, kein Login – einfach öffnen und loslegen.</p></details>
+          <details><summary>Welche Banken kann ich importieren?</summary><p>Aktuell DKB, FYRST und American Express (CSV-Umsatzliste). Der Import ist so gebaut, dass sich weitere Banken ergänzen lassen.</p></details>
+          <details><summary>Kann ich es mit meinem Partner / meiner Familie teilen?</summary><p>Ja – über die faire Aufteilung im Haushalt und, wenn ihr wollt, eine gemeinsame JSON-Datei in einem geteilten Ordner (z. B. Dropbox). Ein automatischer Cloud-Sync existiert bewusst nicht.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot-in">
+      <div>
+        <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name"><span class="brand-spar">Spar</span>blick</span></a>
+        <small>Lokaler Vertrags- &amp; Budget-Tracker. Kostenlos &amp; Open Source. Keine Finanzberatung – Sparblick hilft dir nur beim Überblick über deine eigenen Zahlen.</small>
+      </div>
+      <div class="links">
+        <a href="app/">App öffnen</a>
+        <a href="https://github.com/olekslev69/sparblick" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/olekslev69/sparblick/releases" target="_blank" rel="noopener">Downloads</a>
+        <a href="https://github.com/olekslev69/sparblick/blob/main/LICENSE" target="_blank" rel="noopener">Lizenz (Apache 2.0)</a>
+        <a href="#top">Impressum</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
